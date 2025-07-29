@@ -6,48 +6,51 @@ from util import *
 
 #############################################################################
 
-class Album:
-    def __init__(self, id: str, name: str, artist: str):
+class Track:
+    def __init__(self, id: str, name: str, artist: str, album: str):
         self.id = id
         self._name = name.strip()
         self._artist = artist.strip()
+        self._album = album.strip()
         
     @staticmethod
     def fromItem(item):
-        obj = Album(id=item.id, name=item.name, artist=item.artists[0].name)        
+        obj = Track(id=item.id, name=item.name, artist=item.artists[0].name, album=item.album.name)        
         return obj
 
     @property
     def name(self):
         return self._artist + " - " + self._name
-        
+
     def simplifiedName(self):
         return simplifiedName(self.name)
         
     def sortKey(self):
-        return (self._artist.lower(), self._name.lower(),)
+        return (self._artist.lower(), self._name.lower(), self._album.lower())
 
 #############################################################################
 
-class AlbumModel(QAbstractTableModel):
+class TrackModel(QAbstractTableModel):
     
-    COLUMNS = ['id', 'name', 'artist']
+    COLUMNS = ['id', 'name', 'artist', 'album']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.clear()
                 
-    def setSiblingModel(self, model: "AlbumModel"):
+    def setSiblingModel(self, model: "TrackModel"):
         self.sibling = model
       
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
-                return self.albums[index.row()].id
+                return self.tracks[index.row()].id
             elif index.column() == 1:
-                return self.albums[index.row()]._name
+                return self.tracks[index.row()]._name
             elif index.column() == 2:
-                return self.albums[index.row()]._artist
+                return self.tracks[index.row()]._artist
+            elif index.column() == 3:
+                return self.tracks[index.row()]._album
                 
         elif role == Qt.ItemDataRole.BackgroundRole:
             if self.names[index.row()] in self.sibling.names:
@@ -61,31 +64,28 @@ class AlbumModel(QAbstractTableModel):
         return super().headerData(section, orientation, role)
         
     def rowCount(self, index):
-        return len(self.albums)
+        return len(self.tracks)
         
     def columnCount(self, index):
         return len(self.COLUMNS)
   
     def clear(self):
-        self.albums = []
+        self.tracks = []
         self.names = []
         
-    def add(self, item: Album):
-        self.albums.append(item)
-        self.names = [ x.name.lower() for x in self.albums ]
-        
-    def hasKey(self, name: str):
-        return name.lower() in self.names
-                
+    def add(self, item: Track):
+        self.tracks.append(item)
+        self.names = [ x.name.lower() for x in self.tracks ]
+                     
     def find(self, name: str):
         if name.lower() not in self.names:
             return None
         index = self.names.index(name.lower())
-        return self.albums[index]
+        return self.tracks[index]
         
 #############################################################################
 
-class AlbumWidget(QWidget):
+class TrackWidget(QWidget):
     def __init__(self, parent):
         super().__init__()
         
@@ -108,13 +108,13 @@ class AlbumWidget(QWidget):
         self.wButtonTransfer.clicked.connect(self.transferSrcToDst)
         self.wButtonRevTransfer.clicked.connect(self.transferDstToSrc)
         
-        self.wTableModelSrc = AlbumModel()
+        self.wTableModelSrc = TrackModel()
         self.wTableViewSrc = QTableView()
         self.wTableViewSrc.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewSrc.verticalHeader().hide()
         self.wTableViewSrc.setModel(self.wTableModelSrc)
         
-        self.wTableModelDst = AlbumModel()
+        self.wTableModelDst = TrackModel()
         self.wTableViewDst = QTableView()
         self.wTableViewDst.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewDst.verticalHeader().hide()
@@ -160,6 +160,7 @@ class AlbumWidget(QWidget):
         if self.parent.dst_app:
             self.wLabelDst.setText(self.parent.dst_app.name)
 
+    
     def scrollSrcTable(self):
         """Synchronize Dst with Src scroll bar."""
         
@@ -175,7 +176,7 @@ class AlbumWidget(QWidget):
     def loadSrcData(self):
         """Load Src table."""
         
-        self._loadAlbums(self.parent.src_app, self.wTableModelSrc)
+        self._loadTracks(self.parent.src_app, self.wTableModelSrc)
         
         self.wTableModelSrc.layoutChanged.emit()
         self.wTableModelDst.layoutChanged.emit()
@@ -183,7 +184,7 @@ class AlbumWidget(QWidget):
     def loadDstData(self):
         """Load Dst table."""
         
-        self._loadAlbums(self.parent.dst_app, self.wTableModelDst)
+        self._loadTracks(self.parent.dst_app, self.wTableModelDst)
         
         self.wTableModelSrc.layoutChanged.emit()
         self.wTableModelDst.layoutChanged.emit()
@@ -191,7 +192,7 @@ class AlbumWidget(QWidget):
     def transferSrcToDst(self):
         """Transfer items from Src to Dst."""
         
-        self._transferAlbums(self.parent.src_app, self.wTableModelSrc,
+        self._transferTracks(self.parent.src_app, self.wTableModelSrc,
                              self.parent.dst_app, self.wTableModelDst)
 
         self.wTableModelDst.layoutChanged.emit()
@@ -199,7 +200,7 @@ class AlbumWidget(QWidget):
     def transferDstToSrc(self):
         """Transfer items from Dst to Src."""
         
-        self._transferAlbums(self.parent.dst_app, self.wTableModelDst,
+        self._transferTracks(self.parent.dst_app, self.wTableModelDst,
                              self.parent.src_app, self.wTableModelSrc)
         
         self.wTableModelSrc.layoutChanged.emit()
@@ -217,87 +218,87 @@ class AlbumWidget(QWidget):
                     dst_view.scrollTo(dst_model.createIndex(d_row, 0))
                     dst_view.update()
 
-    def _loadAlbums(self, app, model: QAbstractTableModel):
+    def _loadTracks(self, app, model: QAbstractTableModel):
         
         model.clear()
 
-        self.parent.showMessage(f"\nLoading {app.name} albums ...")
-        items = app.get_saved_albums()
-        albums = sorted([Album.fromItem(x) for x in items], 
+        self.parent.showMessage(f"\nLoading {app.name} tracks ...")
+        items = app.get_saved_tracks()
+        tracks = sorted([Track.fromItem(x) for x in items], 
                          key=lambda x: x.sortKey())
         
-        print(f"=> Albums ({len(albums)}):")
-        for album in albums:
-            self.parent.showMessage(f"Loaded album: {album.name}")
-            model.add(album)
+        print(f"=> Tracks ({len(tracks)}):")
+        for track in tracks:
+            self.parent.showMessage(f"Loaded track: {track.name}")
+            model.add(track)
 
-    def _transferAlbums(self, 
+    def _transferTracks(self, 
                         src_app, src_model: QAbstractTableModel, 
                         dst_app, dst_model: QAbstractTableModel):
                              
-        new_id_list = []  # collected album id's to add
+        new_id_list = []  # collected track id's to add
         
         cancel = False    # true if operation cancelled by user
-        for s_album in src_model.albums:
-            s_name = s_album.simplifiedName()
-            s_id = s_album.id
+        for s_track in src_model.tracks:
+            s_name = s_track.simplifiedName()
+            s_id = s_track.id
 
-            # Skip already added albums
-            d_album = dst_model.find(s_name)
-            if d_album:
-                d_id = str(d_album.id)
-                self.parent.mapping_table.add('album', s_id, d_id)
+            # Skip already added track
+            d_track = dst_model.find(s_name)
+            if d_track:
+                d_id = str(d_track.id)
+                self.parent.mapping_table.add('track', s_id, d_id)
                 continue
                 
-            self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id})")
+            self.parent.showMessage(f"Transfer track: {s_name} ({src_app.name}:{s_id})")
 
             # Re-use known mapping
-            d_id = self.parent.mapping_table.find('album', s_id)
+            d_id = self.parent.mapping_table.find('track', s_id)
             if d_id:
-                self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [restored]")
+                self.parent.showMessage(f"Transfer track: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [restored]")
                 new_id_list.append(d_id)
                 continue
 
-            # Search by album name
-            result = dst_app.search_album(s_name)
-            albums = [Album.fromItem(x) for x in result]
+            # Search by track name
+            result = dst_app.search_track(s_name)
+            tracks = [Track.fromItem(x) for x in result]
 
-            # Find matching album in search results
+            # Find matching track in search results
             match = False
-            for d_album in albums:
-                d_name = d_album.simplifiedName()
+            for d_track in tracks:
+                d_name = d_track.simplifiedName()
 
                 # Must have exact, case-insensitive match
                 if d_name.lower() == s_name.lower():
-                    d_id = str(d_album.id)
+                    d_id = str(d_track.id)
                     
-                    self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [matched]")
+                    self.parent.showMessage(f"Transfer track: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [matched]")
                     new_id_list.append(d_id)
-                    self.parent.mapping_table.add('album', s_id, d_id)
+                    self.parent.mapping_table.add('track', s_id, d_id)
                     
                     match = True
                     break
 
             if not match:
-                # Allow to manually specify an album id
+                # Allow to manually specify an track id
                 dlg = QInputDialog(self)                 
                 #dlg.setInputMode(QInputDialog.TextInput) 
-                dlg.setWindowTitle(f"Album not found on {dst_app.name}")
-                dlg.setLabelText(f"Album NOT FOUND!\n{s_name}\n\nPlease provide id manually (leave empty to skip):")                        
+                dlg.setWindowTitle(f"Track not found on {dst_app.name}")
+                dlg.setLabelText(f"Track NOT FOUND!\n{s_name}\n\nPlease provide id manually (leave empty to skip):")                        
                 dlg.resize(400, 100)
                 
                 if dlg.exec():
-                    # Get album by id
+                    # Get track by id
                     d_id = dlg.textValue().strip()
                     if d_id:                    
-                        d_album = dst_app.get_album(d_id)
-                        if d_album:
-                            d_name = d_album.simplifiedName()
+                        d_track = dst_app.get_track(d_id)
+                        if d_track:
+                            d_name = d_track.simplifiedName()
 
-                            # Add saved album
-                            self.parent.showMessage(f"Adding album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [manual]")
+                            # Add saved track
+                            self.parent.showMessage(f"Adding track: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [manual]")
                             new_id_list.append(d_id)
-                            self.parent.mapping_table.add('album', s_id, d_id)
+                            self.parent.mapping_table.add('track', s_id, d_id)
 
                 else:
                     cancel = True
@@ -306,13 +307,13 @@ class AlbumWidget(QWidget):
         if cancel:
             return
         
-        print(f"Adding {len(new_id_list)} albums to {dst_app.name} ...")
-        if dst_app.add_saved_album(new_id_list):
+        print(f"Adding {len(new_id_list)} tracks to {dst_app.name} ...")
+        if dst_app.add_saved_track(new_id_list):
             msg = QMessageBox(self)
             msg.setWindowTitle("Success")
-            msg.setText(f"{len(new_id_list)} album(s) were added to {self.parent.dst_app.name}.")
+            msg.setText(f"{len(new_id_list)} track(s) were added to {self.parent.dst_app.name}.")
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
             msg.exec()
             
-            self._loadAlbums(dst_app, dst_model)
-            
+            self._loadTracks(dst_app, dst_model)
+

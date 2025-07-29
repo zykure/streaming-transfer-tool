@@ -1,14 +1,31 @@
 from PyQt6.QtCore import Qt, QPoint, QAbstractTableModel
 from PyQt6.QtWidgets import *
-from collections import namedtuple
 
 from util import *
 
 #############################################################################
 
-Artist = namedtuple('Artist', 'id name')
+class Artist:
+    def __init__(self, id: str, name: str):
+        self.id = id
+        self._name = name.strip()
+        
+    @staticmethod
+    def fromItem(item):
+        obj = Artist(id=item.id, name=item.name)        
+        return obj
+                
+    @property
+    def name(self):
+        return self._name
+        
+    def simplifiedName(self):
+        return simplifiedName(self.name)
+        
+    def sortKey(self):
+        return (self._name.lower(),)
 
-artistName = lambda x: x.name.strip()
+#############################################################################
 
 class ArtistModel(QAbstractTableModel):
     
@@ -26,7 +43,7 @@ class ArtistModel(QAbstractTableModel):
             if index.column() == 0:
                 return self.artists[index.row()].id
             elif index.column() == 1:
-                return self.artists[index.row()].name
+                return self.artists[index.row()]._name
                 
         elif role == Qt.ItemDataRole.BackgroundRole:
             if self.names[index.row()] in self.sibling.names:
@@ -51,7 +68,13 @@ class ArtistModel(QAbstractTableModel):
         
     def add(self, item: Artist):
         self.artists.append(item)
-        self.names = [ artistName(x).lower() for x in self.artists ]
+        self.names = [ x.name.lower() for x in self.artists ]
+
+    def find(self, name: str):
+        if name.lower() not in self.names:
+            return None
+        index = self.names.index(name.lower())
+        return self.artists[index]
         
 #############################################################################
 
@@ -64,16 +87,19 @@ class ArtistWidget(QWidget):
         self.wButtonLoadSrc = QPushButton('< Load')
         self.wButtonLoadDst = QPushButton('Load >')
         self.wButtonTransfer = QPushButton('>> Transfer >>')
+        self.wButtonRevTransfer = QPushButton('<< Transfer <<')
 
         self.wButtonLayout = QGridLayout()
         self.wButtonLayout.setContentsMargins(20, 100, 20, 100);
         self.wButtonLayout.addWidget(self.wButtonLoadSrc, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
         self.wButtonLayout.addWidget(self.wButtonLoadDst, 3, 2, 1, 1, Qt.AlignmentFlag.AlignRight)
         self.wButtonLayout.addWidget(self.wButtonTransfer, 8, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.addWidget(self.wButtonRevTransfer, 9, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
         
-        self.wButtonLoadSrc.clicked.connect(self.load_artists_src)
-        self.wButtonLoadDst.clicked.connect(self.load_artists_dst)
-        self.wButtonTransfer.clicked.connect(self.transfer_artists)
+        self.wButtonLoadSrc.clicked.connect(self.loadSrcData)
+        self.wButtonLoadDst.clicked.connect(self.loadDstData)
+        self.wButtonTransfer.clicked.connect(self.transferSrcToDst)
+        self.wButtonRevTransfer.clicked.connect(self.transferDstToSrc)
         
         self.wTableModelSrc = ArtistModel()
         self.wTableViewSrc = QTableView()
@@ -87,8 +113,8 @@ class ArtistWidget(QWidget):
         self.wTableViewDst.verticalHeader().hide()
         self.wTableViewDst.setModel(self.wTableModelDst)
         
-        self.wTableViewSrc.verticalScrollBar().valueChanged.connect(self.scroll_artists_src)
-        self.wTableViewDst.verticalScrollBar().valueChanged.connect(self.scroll_artists_dst)
+        self.wTableViewSrc.verticalScrollBar().valueChanged.connect(self.scrollSrcTable)
+        self.wTableViewDst.verticalScrollBar().valueChanged.connect(self.scrollDstTable)
 
         self.wTableModelSrc.setSiblingModel(self.wTableModelDst)
         self.wTableModelDst.setSiblingModel(self.wTableModelSrc)
@@ -116,7 +142,9 @@ class ArtistWidget(QWidget):
         
         self.setLayout(self.wLayout)
    
-    def refresh(self):
+    def reset(self):
+        """Clear table data and reset widgets."""
+        
         self.wTableModelSrc.clear()
         self.wTableModelDst.clear()
 
@@ -125,86 +153,120 @@ class ArtistWidget(QWidget):
         if self.parent.dst_app:
             self.wLabelDst.setText(self.parent.dst_app.name)
 
-    def scroll_artists_src(self):
-        s_row = self.wTableViewSrc.indexAt(QPoint(0, 0)).row()  # top row
-        if s_row:
-            name = self.wTableModelSrc.names[s_row]
-            if name in self.wTableModelDst.names:
-                d_row = self.wTableModelDst.names.index(name)
-                if d_row:
-                    self.wTableViewDst.scrollTo(self.wTableModelDst.createIndex(d_row, 0))
-                    self.wTableViewDst.update()
+    def scrollSrcTable(self):
+        """Synchronize Dst with Src scroll bar."""
         
-    def scroll_artists_dst(self):
-        s_row = self.wTableViewDst.indexAt(QPoint(0, 0)).row()  # top row
-        if s_row:
-            name = self.wTableModelDst.names[s_row]
-            if name in self.wTableModelSrc.names:
-                d_row = self.wTableModelSrc.names.index(name)
-                if d_row:
-                    self.wTableViewSrc.scrollTo(self.wTableModelSrc.createIndex(d_row, 0))
-                    self.wTableViewSrc.update()
-
-    def load_artists_src(self):
-        self.wTableModelSrc.clear()
-
-        print(f"\nLoading {self.parent.src_app.name} artists ...")
-        items = self.parent.src_app.get_saved_artists()
-        items = sorted(items, key=lambda x: (x.name.lower()))
+        self._scrollTable(self.wTableViewSrc, self.wTableModelSrc,
+                          self.wTableViewDst, self.wTableModelDst)
         
-        print(f"=> Artists ({len(items)}):")
-        for item in items:
-            print(f"\t{item.name}")
-            self.wTableModelSrc.add(Artist(id=item.id, name=item.name.strip()))
+    def scrollDstTable(self):
+        """Synchronize Src with Dst scroll bar."""
+        
+        self._scrollTable(self.wTableViewDst, self.wTableModelDst,
+                          self.wTableViewSrc, self.wTableModelSrc)
 
-        # Trigger refresh
+    def loadSrcData(self):
+        """Load Src table."""
+        
+        self._loadArtists(self.parent.src_app, self.wTableModelSrc)
+        
         self.wTableModelSrc.layoutChanged.emit()
         self.wTableModelDst.layoutChanged.emit()
         
-    def load_artists_dst(self):
-        self.wTableModelDst.clear()
-
-        print(f"\nLoading {self.parent.dst_app.name} artists ...")
-        items = self.parent.dst_app.get_saved_artists()
-        items = sorted(items, key=lambda x: (x.name.lower()))
+    def loadDstData(self):
+        """Load Dst table."""
         
-        print(f"=> Artists ({len(items)}):")
-        for item in items:
-            print(f"\t{item.name}")
-            self.wTableModelDst.add(Artist(id=item.id, name=item.name.strip()))
+        self._loadArtists(self.parent.dst_app, self.wTableModelDst)
         
-        # Trigger refresh
-        self.wTableModelDst.layoutChanged.emit()
         self.wTableModelSrc.layoutChanged.emit()
+        self.wTableModelDst.layoutChanged.emit()
         
-    def transfer_artists(self):
-        print("\nProcessing missing artists:")
+    def transferSrcToDst(self):
+        """Transfer items from Src to Dst."""
+        
+        self._transferArtists(self.parent.src_app, self.wTableModelSrc,
+                              self.parent.dst_app, self.wTableModelDst)
+
+        self.wTableModelDst.layoutChanged.emit()
+        
+    def transferDstToSrc(self):
+        """Transfer items from Dst to Src."""
+        
+        self._transferArtists(self.parent.dst_app, self.wTableModelDst,
+                              self.parent.src_app, self.wTableModelSrc)
+        
+        self.wTableModelSrc.layoutChanged.emit()
+
+    def _scrollTable(self, 
+                     src_view: QTableView, src_model: QAbstractTableModel, 
+                     dst_view: QTableView, dst_model: QAbstractTableModel):
+        
+        s_row = src_view.indexAt(QPoint(0, 0)).row()  # top row
+        if s_row:
+            name = src_model.names[s_row]
+            if name in dst_model.names:
+                d_row = dst_model.names.index(name)
+                if d_row:
+                    dst_view.scrollTo(dst_model.createIndex(d_row, 0))
+                    dst_view.update()
+
+    def _loadArtists(self, app, model: QAbstractTableModel):
+        
+        model.clear()
+
+        self.parent.showMessage(f"\nLoading {app.name} artists ...")
+        items = app.get_saved_artists()
+        artists = sorted([Artist.fromItem(x) for x in items], 
+                         key=lambda x: x.sortKey())
+        
+        print(f"=> Artists ({len(artists)}):")
+        for artist in artists:
+            self.parent.showMessage(f"Loaded artist: {artist.name}")
+            model.add(artist)
+
+    def _transferArtists(self, 
+                         src_app, src_model: QAbstractTableModel, 
+                         dst_app, dst_model: QAbstractTableModel):
         
         new_id_list = []  # collected artist id's to add
+        
         cancel = False    # true if operation cancelled by user
-        for s_artist in self.wTableModelSrc.artists:
-            s_name = simplifiedName(artistName(s_artist))
+        for s_artist in src_model.artists:
+            s_name = s_artist.simplifiedName()
             s_id = s_artist.id
 
             # Skip already added artists
-            if s_name.lower() in self.wTableModelDst.names:
+            d_artist = dst_model.find(s_name)
+            if d_artist:
+                d_id = str(d_artist.id)
+                self.parent.mapping_table.add('artist', s_id, d_id)
+                continue
+                
+            self.parent.showMessage(f"Transfer artist: {s_name} ({src_app.name}:{s_id})")
+
+            # Re-use known mapping
+            d_id = self.parent.mapping_table.find('artist', s_id)
+            if d_id:
+                self.parent.showMessage(f"Transfer artist: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [restored]")
+                new_id_list.append(d_id)
                 continue
 
             # Search by artist name
-            print(f"+ [add] {s_name} ({self.parent.src_app.name}:{s_id})")
-            result = self.parent.dst_app.search_artist(s_name)
+            result = dst_app.search_artist(s_name)
+            artists = [Artist.fromItem(x) for x in result]
 
             # Find matching artist in search results
             match = False
-            for d_artist in result:
-                d_name = simplifiedName(artistName(d_artist))
-                d_id = str(d_artist.id)
+            for d_artist in artists:
+                d_name = d_artist.simplifiedName()
 
                 # Must have exact, case-insensitive match
                 if d_name.lower() == s_name.lower():
                     d_id = str(d_artist.id)
-                    print(f"\t{d_name} ({self.parent.dst_app.name}:{d_id})")
+                    
+                    self.parent.showMessage(f"Transfer artist: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [matched]")
                     new_id_list.append(d_id)
+                    self.parent.mapping_table.add('artist', s_id, d_id)
                     
                     match = True
                     break
@@ -213,23 +275,22 @@ class ArtistWidget(QWidget):
                 # Allow to manually specify an artist id
                 dlg = QInputDialog(self)                 
                 #dlg.setInputMode(QInputDialog.TextInput) 
-                dlg.setWindowTitle(f"Artist not found on {self.parent.dst_app.name}")
-                dlg.setLabelText(f"Artist NOT FOUND!\n{s_name}\n\nPlease provide id manually:")                        
+                dlg.setWindowTitle(f"Artist not found on {dst_app.name}")
+                dlg.setLabelText(f"Artist NOT FOUND!\n{s_name}\n\nPlease provide id manually (leave empty to skip):")                        
                 dlg.resize(400, 100)
                 
                 if dlg.exec():
                     # Get artist by id
                     d_id = dlg.textValue().strip()
-                    
                     if d_id:                    
-                        d_artist = self.parent.dst_app.get_artist(d_id)
-                        
+                        d_artist = dst_app.get_artist(d_id)
                         if d_artist:
-                            d_name = simplifiedName(artistName(d_artist))
+                            d_name = d_artist.simplifiedName()
 
                             # Add saved artist
-                            print(f"\t{d_name} ({self.parent.dst_app.name}:{d_id})")
+                            self.parent.showMessage(f"Adding artist: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [manual]")
                             new_id_list.append(d_id)
+                            self.parent.mapping_table.add('artist', s_id, d_id)
 
                 else:
                     cancel = True
@@ -238,10 +299,12 @@ class ArtistWidget(QWidget):
         if cancel:
             return
         
-        print(f"Adding {len(new_id_list)} artists to {self.parent.dst_app.name} ...")
-        if self.parent.dst_app.add_saved_artist(new_id_list):
+        print(f"Adding {len(new_id_list)} artists to {dst_app.name} ...")
+        if dst_app.add_saved_artist(new_id_list):
             msg = QMessageBox(self)
             msg.setWindowTitle("Success")
             msg.setText(f"{len(new_id_list)} artist(s) were added to {self.parent.dst_app.name}.")
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
             msg.exec()
+            
+            self._loadArtists(dst_app, dst_model)

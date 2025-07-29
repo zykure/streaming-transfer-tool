@@ -89,7 +89,7 @@ class SpotifyApp:
         items = []
         offset = 0
         while True:
-            result = self.sp.current_user_saved_albums(limit=50, offset=offset)
+            result = self.sp.current_user_saved_tracks(limit=50, offset=offset)
             #print(result)
             items.extend([ attridict(r) for r in result['items'] ])
             if result['next'] is None:

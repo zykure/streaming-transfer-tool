@@ -13,8 +13,8 @@ app = QApplication(sys.argv)
 
 # Create main window
 window = MainWindow()
-window.set_src_app(SpotifyApp())
-window.set_dst_app(TidalApp())
+window.setSrcApp(SpotifyApp())
+window.setDstApp(TidalApp())
 
 # Start the event loop.
 app.exec()
