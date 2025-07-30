@@ -1,96 +1,102 @@
+import json
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import *
 
 from artist_widget import ArtistWidget
 from album_widget import AlbumWidget
 from track_widget import TrackWidget
+from playlist_widget import PlaylistWidget
 
 #############################################################################
 
 class IdMappingTable():
-    
+
     FILENAME = "saved-id-mappings.json"
-    
+
     def __init__(self, parent):
         self.parent = parent
-        
-        self.mapping_table = {
+
+        self.mappingTable = {
             'artist': {},
             'album':  {},
             'track':  {},
         }
-    
-    def add(self, type: str, src_id: str, dst_id: str):
-        if type not in self.mapping_table:
+
+    def add(self, type: str, idA: str, idB: str):
+        if type not in self.mappingTable:
             raise KeyError(f"unknown mapping type: {type}")
 
         # add mapping
-        app_key = f'{self.parent.src_app.name}:{self.parent.dst_app.name}'
-        if app_key not in self.mapping_table[type]:
-            self.mapping_table[type][app_key] = {}
-            
-        self.mapping_table[type][app_key][src_id] = dst_id
-        
+        app_key = f'{self.parent.appA.name}:{self.parent.appB.name}'
+        if app_key not in self.mappingTable[type]:
+            self.mappingTable[type][app_key] = {}
+
+        self.mappingTable[type][app_key][idA] = idB
+
         # add reverse mapping
-        rev_app_key = f'{self.parent.dst_app.name}:{self.parent.src_app.name}'
-        if rev_app_key not in self.mapping_table[type]:
-            self.mapping_table[type][rev_app_key] = {}
-            
-        self.mapping_table[type][rev_app_key][dst_id] = src_id
-        
-    def find(self, type: str, src_id: str):
-        if type not in self.mapping_table:
+        rev_app_key = f'{self.parent.appB.name}:{self.parent.appA.name}'
+        if rev_app_key not in self.mappingTable[type]:
+            self.mappingTable[type][rev_app_key] = {}
+
+        self.mappingTable[type][rev_app_key][idB] = idA
+
+    def find(self, type: str, idA: str):
+        if type not in self.mappingTable:
             raise KeyError(f"unknown mapping type: {type}")
-            
-        app_key = f'{self.parent.src_app.name}:{self.parent.dst_app.name}'
-        if app_key not in self.mapping_table[type]:
+
+        app_key = f'{self.parent.appA.name}:{self.parent.appB.name}'
+        if app_key not in self.mappingTable[type]:
             return None
-            
-        if src_id not in self.mapping_table[type]:
+
+        if idA not in self.mappingTable[type]:
             return None
-        
+
         # return mapping
-        dst_id = self.mapping_table[type][src_id]
-        return dst_id
-    
+        idB = self.mappingTable[type][idA]
+        return idB
+
     def save(self):
-        with open(self.FILENAME, 'w') as f:
-            json.dump(f, self.mapping_table)
-            
+        print("Saving mapping table ...")
+        with open(self.FILENAME, 'w', encoding='utf8') as f:
+            json.dump(self.mappingTable, f)
+
     def load(self):
+        print("Loading mapping table ...")
         try:
-            with open(self.FILENAME, 'r') as f:
-                self.mapping_table = json.load(f)
-        except FileNotFoundError as e:
+            with open(self.FILENAME, 'r', encoding='utf8') as f:
+                self.mappingTable = json.load(f)
+        except FileNotFoundError:
             return
-            
-      
+        except json.decoder.JSONDecodeError:
+            return
+
+
 #############################################################################
-  
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        self.src_app = None
-        self.dst_app = None
-        
-        self.mapping_table = IdMappingTable(self)
-        self.mapping_table.load()
-        
+
+        self.appA = None
+        self.appB = None
+
+        self.mappingTable = IdMappingTable(self)
+        self.mappingTable.load()
+
         # Artists page
         self.artistWidget = ArtistWidget(self)
-        
+
         # Albums page
         self.albumWidget = AlbumWidget(self)
-        
+
         # Tracks page
         self.trackWidget = TrackWidget(self)
-        
+
         # Playlists page
-        self.playlistWidget = QWidget()
-        
+        self.playlistWidget = PlaylistWidget(self)
+
         self.statusBar = self.statusBar()
-        
+
         # Main window
         self.tabWidget = QTabWidget()
         self.tabWidget.addTab(self.artistWidget, 'Artists')
@@ -98,32 +104,32 @@ class MainWindow(QMainWindow):
         self.tabWidget.addTab(self.trackWidget, 'Tracks')
         self.tabWidget.addTab(self.playlistWidget, 'Playlists')
         #self.tabWidget.setStyleSheet("QTabBar::tab {min-width: 100px; max-width: 400px;}");
-        
+
         self.setWindowTitle("Streaming Transfer Tool")
         self.setCentralWidget(self.tabWidget)
         self.resize(1000, 600);
         self.showMaximized()
 
     def closeEvent(self, event):
-        pass
-    
+        self.mappingTable.save()
+
     def showMessage(self, msg, timeout=4000):
         print(msg)
-        self.statusBar.showMessage(msg, timeout)
-      
-    def setSrcApp(self, app):
-        self.src_app = app
-        
+        if self.statusBar:
+            self.statusBar.showMessage(msg, timeout)
+
+    def setAppA(self, app):
+        self.appA = app
+
         self.artistWidget.reset()
         self.albumWidget.reset()
         self.trackWidget.reset()
-        #self.playlistWidget.reset()
-        
-    def setDstApp(self, app):
-        self.dst_app = app
-                
+        self.playlistWidget.reset()
+
+    def setAppB(self, app):
+        self.appB = app
+
         self.artistWidget.reset()
         self.albumWidget.reset()
         self.trackWidget.reset()
-        #self.playlistWidget.reset()
-        
+        self.playlistWidget.reset()

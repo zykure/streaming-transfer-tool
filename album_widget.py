@@ -1,318 +1,149 @@
-from PyQt6.QtCore import Qt, QPoint, QAbstractTableModel
 from PyQt6.QtWidgets import *
-from collections import namedtuple
 
-from util import *
-
-#############################################################################
-
-class Album:
-    def __init__(self, id: str, name: str, artist: str):
-        self.id = id
-        self._name = name.strip()
-        self._artist = artist.strip()
-        
-    @staticmethod
-    def fromItem(item):
-        obj = Album(id=item.id, name=item.name, artist=item.artists[0].name)        
-        return obj
-
-    @property
-    def name(self):
-        return self._artist + " - " + self._name
-        
-    def simplifiedName(self):
-        return simplifiedName(self.name)
-        
-    def sortKey(self):
-        return (self._artist.lower(), self._name.lower(),)
+from widget_template import _WidgetTemplate
+from item_models import AlbumModel
 
 #############################################################################
 
-class AlbumModel(QAbstractTableModel):
-    
-    COLUMNS = ['id', 'name', 'artist']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.clear()
-                
-    def setSiblingModel(self, model: "AlbumModel"):
-        self.sibling = model
-      
-    def data(self, index, role):
-        if role == Qt.ItemDataRole.DisplayRole:
-            if index.column() == 0:
-                return self.albums[index.row()].id
-            elif index.column() == 1:
-                return self.albums[index.row()]._name
-            elif index.column() == 2:
-                return self.albums[index.row()]._artist
-                
-        elif role == Qt.ItemDataRole.BackgroundRole:
-            if self.names[index.row()] in self.sibling.names:
-                return MyColors.Green.value
-            else:
-                return MyColors.Orange.value
-            
-    def headerData(self, section, orientation, role):
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return self.COLUMNS[section]            
-        return super().headerData(section, orientation, role)
-        
-    def rowCount(self, index):
-        return len(self.albums)
-        
-    def columnCount(self, index):
-        return len(self.COLUMNS)
-  
-    def clear(self):
-        self.albums = []
-        self.names = []
-        
-    def add(self, item: Album):
-        self.albums.append(item)
-        self.names = [ x.name.lower() for x in self.albums ]
-        
-    def hasKey(self, name: str):
-        return name.lower() in self.names
-                
-    def find(self, name: str):
-        if name.lower() not in self.names:
-            return None
-        index = self.names.index(name.lower())
-        return self.albums[index]
-        
-#############################################################################
-
-class AlbumWidget(QWidget):
+class AlbumWidget(_WidgetTemplate):
     def __init__(self, parent):
-        super().__init__()
-        
-        self.parent = parent
-        
-        self.wButtonLoadSrc = QPushButton('< Load')
-        self.wButtonLoadDst = QPushButton('Load >')
-        self.wButtonTransfer = QPushButton('>> Transfer >>')
-        self.wButtonRevTransfer = QPushButton('<< Transfer <<')
+        super().__init__(parent)
 
-        self.wButtonLayout = QGridLayout()
-        self.wButtonLayout.setContentsMargins(20, 100, 20, 100);
-        self.wButtonLayout.addWidget(self.wButtonLoadSrc, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
-        self.wButtonLayout.addWidget(self.wButtonLoadDst, 3, 2, 1, 1, Qt.AlignmentFlag.AlignRight)
-        self.wButtonLayout.addWidget(self.wButtonTransfer, 8, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
-        self.wButtonLayout.addWidget(self.wButtonRevTransfer, 9, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
-        
-        self.wButtonLoadSrc.clicked.connect(self.loadSrcData)
-        self.wButtonLoadDst.clicked.connect(self.loadDstData)
-        self.wButtonTransfer.clicked.connect(self.transferSrcToDst)
-        self.wButtonRevTransfer.clicked.connect(self.transferDstToSrc)
-        
-        self.wTableModelSrc = AlbumModel()
-        self.wTableViewSrc = QTableView()
-        self.wTableViewSrc.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.wTableViewSrc.verticalHeader().hide()
-        self.wTableViewSrc.setModel(self.wTableModelSrc)
-        
-        self.wTableModelDst = AlbumModel()
-        self.wTableViewDst = QTableView()
-        self.wTableViewDst.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.wTableViewDst.verticalHeader().hide()
-        self.wTableViewDst.setModel(self.wTableModelDst)
-        
-        self.wTableViewSrc.verticalScrollBar().valueChanged.connect(self.scrollSrcTable)
-        self.wTableViewDst.verticalScrollBar().valueChanged.connect(self.scrollDstTable)
+        # album data
+        self.wTableModelA = AlbumModel()
+        self.wTableViewA.setModel(self.wTableModelA)
 
-        self.wTableModelSrc.setSiblingModel(self.wTableModelDst)
-        self.wTableModelDst.setSiblingModel(self.wTableModelSrc)
-        
-        self.wLabelSrc = QLabel()
-        self.wLabelSrc.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.wLabelSrc.setStyleSheet("QLabel {font-size: 400%; font-weight: bold; text-align: center}");
-        
-        self.wLayoutSrc = QVBoxLayout()
-        self.wLayoutSrc.addWidget(self.wLabelSrc)
-        self.wLayoutSrc.addWidget(self.wTableViewSrc)
-        
-        self.wLabelDst = QLabel()
-        self.wLabelDst.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.wLabelDst.setStyleSheet("QLabel {font-size: 400%; font-weight: bold; text-align: center}");
-        
-        self.wLayoutDst = QVBoxLayout()
-        self.wLayoutDst.addWidget(self.wLabelDst)
-        self.wLayoutDst.addWidget(self.wTableViewDst)
+        self.wTableModelB = AlbumModel()
+        self.wTableViewB.setModel(self.wTableModelB)
 
+        self.wTableModelA.setSiblingModel(self.wTableModelB)
+        self.wTableModelB.setSiblingModel(self.wTableModelA)
+
+        # layout
         self.wLayout = QHBoxLayout()
-        self.wLayout.addLayout(self.wLayoutSrc)
+        self.wLayout.addLayout(self.wLayoutA)
         self.wLayout.addLayout(self.wButtonLayout)
-        self.wLayout.addLayout(self.wLayoutDst)
-        
+        self.wLayout.addLayout(self.wLayoutB)
+
         self.setLayout(self.wLayout)
- 
-    def reset(self):
-        """Clear table data and reset widgets."""
-        
-        self.wTableModelSrc.clear()
-        self.wTableModelDst.clear()
 
-        if self.parent.src_app:
-            self.wLabelSrc.setText(self.parent.src_app.name)
-        if self.parent.dst_app:
-            self.wLabelDst.setText(self.parent.dst_app.name)
+    def _loadData(self, app, view: QTableView):
 
-    def scrollSrcTable(self):
-        """Synchronize Dst with Src scroll bar."""
-        
-        self._scrollTable(self.wTableViewSrc, self.wTableModelSrc,
-                          self.wTableViewDst, self.wTableModelDst)
-        
-    def scrollDstTable(self):
-        """Synchronize Src with Dst scroll bar."""
-        
-        self._scrollTable(self.wTableViewDst, self.wTableModelDst,
-                          self.wTableViewSrc, self.wTableModelSrc)
-
-    def loadSrcData(self):
-        """Load Src table."""
-        
-        self._loadAlbums(self.parent.src_app, self.wTableModelSrc)
-        
-        self.wTableModelSrc.layoutChanged.emit()
-        self.wTableModelDst.layoutChanged.emit()
-        
-    def loadDstData(self):
-        """Load Dst table."""
-        
-        self._loadAlbums(self.parent.dst_app, self.wTableModelDst)
-        
-        self.wTableModelSrc.layoutChanged.emit()
-        self.wTableModelDst.layoutChanged.emit()
-        
-    def transferSrcToDst(self):
-        """Transfer items from Src to Dst."""
-        
-        self._transferAlbums(self.parent.src_app, self.wTableModelSrc,
-                             self.parent.dst_app, self.wTableModelDst)
-
-        self.wTableModelDst.layoutChanged.emit()
-        
-    def transferDstToSrc(self):
-        """Transfer items from Dst to Src."""
-        
-        self._transferAlbums(self.parent.dst_app, self.wTableModelDst,
-                             self.parent.src_app, self.wTableModelSrc)
-        
-        self.wTableModelSrc.layoutChanged.emit()
-
-    def _scrollTable(self, 
-                     src_view: QTableView, src_model: QAbstractTableModel, 
-                     dst_view: QTableView, dst_model: QAbstractTableModel):
-        
-        s_row = src_view.indexAt(QPoint(0, 0)).row()  # top row
-        if s_row:
-            name = src_model.names[s_row]
-            if name in dst_model.names:
-                d_row = dst_model.names.index(name)
-                if d_row:
-                    dst_view.scrollTo(dst_model.createIndex(d_row, 0))
-                    dst_view.update()
-
-    def _loadAlbums(self, app, model: QAbstractTableModel):
-        
+        model = view.model()
         model.clear()
 
         self.parent.showMessage(f"\nLoading {app.name} albums ...")
         items = app.get_saved_albums()
-        albums = sorted([Album.fromItem(x) for x in items], 
-                         key=lambda x: x.sortKey())
-        
+        albums = sorted(items, key=lambda x: x.sortKey())
+
         print(f"=> Albums ({len(albums)}):")
         for album in albums:
             self.parent.showMessage(f"Loaded album: {album.name}")
             model.add(album)
 
-    def _transferAlbums(self, 
-                        src_app, src_model: QAbstractTableModel, 
-                        dst_app, dst_model: QAbstractTableModel):
-                             
-        new_id_list = []  # collected album id's to add
-        
-        cancel = False    # true if operation cancelled by user
-        for s_album in src_model.albums:
-            s_name = s_album.simplifiedName()
-            s_id = s_album.id
+        self.wTableModelA.layoutChanged.emit()
+        self.wTableModelB.layoutChanged.emit()
+
+    def _transferData(self,
+                      appA, viewA: QTableView,
+                      appB, viewB: QTableView):
+
+        modelA = viewA.model()
+        modelB = viewB.model()
+
+        for a_album in modelA.items:
+            a_name = a_album.simplifiedName()
+            a_id = a_album.id
 
             # Skip already added albums
-            d_album = dst_model.find(s_name)
-            if d_album:
-                d_id = str(d_album.id)
-                self.parent.mapping_table.add('album', s_id, d_id)
+            b_album = modelB.find(a_name)
+            if b_album:
+                b_id = str(b_album.id)
+                self.parent.mappingTable.add('album', a_id, b_id)
                 continue
-                
-            self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id})")
 
             # Re-use known mapping
-            d_id = self.parent.mapping_table.find('album', s_id)
-            if d_id:
-                self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [restored]")
-                new_id_list.append(d_id)
+            b_id = self.parent.mappingTable.find('album', a_id)
+            if b_id:
+                b_album = appB.get_album(b_id)
+
+                self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
+                b_album.setDirty(True)  # mark as dirty to save later
+                modelB.insert(b_album)
                 continue
 
             # Search by album name
-            result = dst_app.search_album(s_name)
-            albums = [Album.fromItem(x) for x in result]
+            query = f"{a_album.artist} - {a_album._name}"
+            print("Searching for album:", query)
+            result = appB.search_album(query)
 
             # Find matching album in search results
             match = False
-            for d_album in albums:
-                d_name = d_album.simplifiedName()
+            for b_album in result:
+                b_name = b_album.simplifiedName()
 
                 # Must have exact, case-insensitive match
-                if d_name.lower() == s_name.lower():
-                    d_id = str(d_album.id)
-                    
-                    self.parent.showMessage(f"Transfer album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [matched]")
-                    new_id_list.append(d_id)
-                    self.parent.mapping_table.add('album', s_id, d_id)
-                    
+                if b_album.name.lower() == a_album.name.lower() \
+                        and b_album.artist.lower() == a_album.artist.lower():
+                    b_id = str(b_album.id)
+
+                    self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
+                    b_album.setDirty(True)  # mark as dirty to save later
+                    modelB.insert(b_album)
+                    self.parent.mappingTable.add('album', a_id, b_id)
+
                     match = True
                     break
 
             if not match:
                 # Allow to manually specify an album id
-                dlg = QInputDialog(self)                 
-                #dlg.setInputMode(QInputDialog.TextInput) 
-                dlg.setWindowTitle(f"Album not found on {dst_app.name}")
-                dlg.setLabelText(f"Album NOT FOUND!\n{s_name}\n\nPlease provide id manually (leave empty to skip):")                        
+                dlg = QInputDialog(self)
+                #dlg.setInputMode(QInputDialog.TextInput)
+                dlg.setWindowTitle(f"Album not found on {appB.name}")
+                dlg.setLabelText(f"Album NOT FOUND!\n{a_name}\n\nPlease provide id manually (leave empty to skip):")
                 dlg.resize(400, 100)
-                
+
                 if dlg.exec():
                     # Get album by id
-                    d_id = dlg.textValue().strip()
-                    if d_id:                    
-                        d_album = dst_app.get_album(d_id)
-                        if d_album:
-                            d_name = d_album.simplifiedName()
+                    b_id = dlg.textValue().strip()
+                    if b_id:
+                        b_album = appB.get_album(b_id)
+                        if b_album:
+                            b_name = b_album.simplifiedName()
 
                             # Add saved album
-                            self.parent.showMessage(f"Adding album: {s_name} ({src_app.name}:{s_id}) => {d_name} ({dst_app.name}:{d_id}) [manual]")
-                            new_id_list.append(d_id)
-                            self.parent.mapping_table.add('album', s_id, d_id)
+                            self.parent.showMessage(f"Adding album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
+                            b_album.setDirty(True)  # mark as dirty to save later
+                            modelB.insert(b_album)
+                            self.parent.mappingTable.add('album', a_id, b_id)
 
                 else:
-                    cancel = True
-                    break
-                    
-        if cancel:
+                    return
+
+        self.wTableModelA.layoutChanged.emit()
+        self.wTableModelB.layoutChanged.emit()
+
+    def _submitData(self, app, view: QTableView):
+
+        model = view.model()
+
+        added_albums = []
+        for item in model.items:
+            if item.dirty:
+                added_albums.append(item)
+
+        if not added_albums:
             return
-        
-        print(f"Adding {len(new_id_list)} albums to {dst_app.name} ...")
-        if dst_app.add_saved_album(new_id_list):
-            msg = QMessageBox(self)
-            msg.setWindowTitle("Success")
-            msg.setText(f"{len(new_id_list)} album(s) were added to {self.parent.dst_app.name}.")
-            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-            msg.exec()
-            
-            self._loadAlbums(dst_app, dst_model)
-            
+
+        print(added_albums)
+
+        print(f"Adding {len(added_albums)} albums to {app.name} ...")
+        app.add_saved_albums(added_albums)
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Success")
+        msg.setText(f"{len(added_albums)} album(s) were added to {app.name}.")
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
+
+        self._loadData(app, view)
