@@ -9,6 +9,10 @@ from playlist_widget import PlaylistWidget
 
 #############################################################################
 
+gMainWindow: QMainWindow|None = None
+
+#############################################################################
+
 class IdMappingTable():
 
     FILENAME = "saved-id-mappings.json"
@@ -16,55 +20,55 @@ class IdMappingTable():
     def __init__(self, parent):
         self.parent = parent
 
-        self.mappingTable = {
+        self.data = {
             'artist': {},
             'album':  {},
             'track':  {},
         }
 
     def add(self, type: str, idA: str, idB: str):
-        if type not in self.mappingTable:
+        if type not in self.data:
             raise KeyError(f"unknown mapping type: {type}")
 
         # add mapping
         app_key = f'{self.parent.appA.name}:{self.parent.appB.name}'
-        if app_key not in self.mappingTable[type]:
-            self.mappingTable[type][app_key] = {}
+        if app_key not in self.data[type]:
+            self.data[type][app_key] = {}
 
-        self.mappingTable[type][app_key][idA] = idB
+        self.data[type][app_key][idA] = idB
 
         # add reverse mapping
         rev_app_key = f'{self.parent.appB.name}:{self.parent.appA.name}'
-        if rev_app_key not in self.mappingTable[type]:
-            self.mappingTable[type][rev_app_key] = {}
+        if rev_app_key not in self.data[type]:
+            self.data[type][rev_app_key] = {}
 
-        self.mappingTable[type][rev_app_key][idB] = idA
+        self.data[type][rev_app_key][idB] = idA
 
     def find(self, type: str, idA: str):
-        if type not in self.mappingTable:
+        if type not in self.data:
             raise KeyError(f"unknown mapping type: {type}")
 
         app_key = f'{self.parent.appA.name}:{self.parent.appB.name}'
-        if app_key not in self.mappingTable[type]:
+        if app_key not in self.data[type]:
             return None
 
-        if idA not in self.mappingTable[type]:
+        if idA not in self.data[type]:
             return None
 
         # return mapping
-        idB = self.mappingTable[type][idA]
+        idB = self.data[type][idA]
         return idB
 
     def save(self):
         print("Saving mapping table ...")
         with open(self.FILENAME, 'w', encoding='utf8') as f:
-            json.dump(self.mappingTable, f)
+            json.dump(self.data, f, indent=2)
 
     def load(self):
         print("Loading mapping table ...")
         try:
             with open(self.FILENAME, 'r', encoding='utf8') as f:
-                self.mappingTable = json.load(f)
+                self.data = json.load(f)
         except FileNotFoundError:
             return
         except json.decoder.JSONDecodeError:
@@ -75,6 +79,9 @@ class IdMappingTable():
 
 class MainWindow(QMainWindow):
     def __init__(self):
+        global gMainWindow
+        gMainWindow = self
+
         super().__init__()
 
         self.appA = None

@@ -2,6 +2,7 @@ from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import *
 
 from widget_template import _WidgetTemplate
+from dialogs import MessageDialog, InputDialog
 from item_models import PlaylistModel, TrackModel
 from item_types import Playlist
 
@@ -209,10 +210,13 @@ class PlaylistWidget(_WidgetTemplate):
 
                 if not match:
                     # Allow to manually specify an track id
-                    dlg = QInputDialog(self)
-                    #dlg.setInputMode(QInputDialog.TextInput)
-                    dlg.setWindowTitle(f"Track not found on {appB.name}")
-                    dlg.setLabelText(f"Track NOT FOUND!\n{a_track_name}\n\nPlease provide id manually (leave empty to skip):")
+                    search_url = appB.get_search_url(query)
+                    dlg = InputDialog(self, f"Track not found on {appB.name}",
+                        "Track NOT FOUND!<br/>"
+                        f'<a href="{search_url}">{a_name}</a><br/><br/>'
+                        "Please provide id manually (leave empty to skip):<br/>",
+                        hint="(Paste Track id here)"
+                    )
                     dlg.resize(400, 100)
 
                     if dlg.exec():
@@ -245,9 +249,11 @@ class PlaylistWidget(_WidgetTemplate):
         model = view.model()
 
         added_playlists = []
-        for item in model.items:
-            if item.dirty:
-                added_playlists.append(item)
+        num_tracks = 0
+        for playlist in model.items:
+            if playlist.dirty:
+                added_playlists.append(playlist)
+                num_tracks += playlist.numTracks()
 
         if not added_playlists:
             return
@@ -258,10 +264,8 @@ class PlaylistWidget(_WidgetTemplate):
         for playlist in added_playlists:
             app.add_playlist(playlist)
 
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Success")
-        msg.setText(f"{len(added_playlists)} playlist(s) were added to {app.name}.")
-        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg.exec()
-
+        dlg = MessageDialog(self, "Success!",
+            f"{len(added_playlists)} playlist(s) with {num_tracks} track(s) were added to {app.name}.")
+        dlg.exec() 
+        
         self._loadData(app, view)

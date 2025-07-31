@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import *
 
 from widget_template import _WidgetTemplate
+from dialogs import MessageDialog, InputDialog
 from item_models import ArtistModel
 
 #############################################################################
@@ -96,10 +97,13 @@ class ArtistWidget(_WidgetTemplate):
 
             if not match:
                 # Allow to manually specify an artist id
-                dlg = QInputDialog(self)
-                #dlg.setInputMode(QInputDialog.TextInput)
-                dlg.setWindowTitle(f"Artist not found on {appB.name}")
-                dlg.setLabelText(f"Artist NOT FOUND!\n{a_name}\n\nPlease provide id manually (leave empty to skip):")
+                search_url = appB.get_search_url(query)
+                dlg = InputDialog(self, f"Artist not found on {appB.name}",
+                    "Artist NOT FOUND!<br/>"
+                    f'<a href="{search_url}">{a_name}</a><br/><br/>'
+                    "Please provide id manually (leave empty to skip):<br/>",
+                    hint="(Paste Artist id here)"
+                )
                 dlg.resize(400, 100)
 
                 if dlg.exec():
@@ -139,10 +143,8 @@ class ArtistWidget(_WidgetTemplate):
         print(f"Adding {len(added_artists)} artists to {app.name} ...")
         app.add_saved_artists(added_artists)
 
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Success")
-        msg.setText(f"{len(added_artists)} artist(s) were added to {app.name}.")
-        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg.exec()
-
+        dlg = MessageDialog(self, "Success!",
+            f"{len(added_artists)} artist(s) were added to {app.name}.")
+        dlg.exec()
+        
         self._loadData(app, view)

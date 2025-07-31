@@ -1,10 +1,50 @@
 #!/usr/bin/env python3
 
 import attridict
+import urllib.parse
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
+from main_window import gMainWindow
 from item_types import Artist, Album, Track, Playlist
+from dialogs import InputDialog
+
+################################################################################
+
+class GuiSpotifyOAuth(SpotifyOAuth):
+    def __init__( self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    def _get_auth_response_interactive(self, open_browser=False):
+        global gMainWindow
+        
+        #if open_browser:
+        #    self._open_auth_url()
+        #    prompt = "Enter the URL you were redirected to: "
+        #else:
+        #    url = self.get_authorize_url()
+        #    prompt = (
+        #        f"Go to the following URL: {url}\n"
+        #        "Enter the URL you were redirected to: "
+        #    )
+        #response = self._get_user_input(prompt)
+        
+        url = self.get_authorize_url()
+        dlg = InputDialog(gMainWindow, f"{SpotifyApp.APP_NAME} login", 
+            "Go to the following URL:<br/>"
+            f'<a href="{url}">{url}</a><br/><br/>'
+            "Enter the URL you were redirected to:<br/>",
+            hint="(Paste URL here)"
+        )
+
+        if dlg.exec():
+            response: str = dlg.textValue()
+            print(response)
+            state, code = SpotifyOAuth.parse_auth_response_url(response)
+            
+            if self.state is not None and self.state != state:
+                raise SpotifyStateError(self.state, state)
+            return code
 
 ################################################################################
 
@@ -16,26 +56,32 @@ class SpotifyApp:
     REDIRECT_URI  = 'https://example.com/callback/'
     AUTH_SCOPE    = 'user-library-read,user-follow-read,user-follow-read'
 
+    APP_NAME = 'Spotify'
     SESSION_FILE  = 'spotify-session-oauth.json'
 
     def __init__(self):
 
-        self.auth = SpotifyOAuth(client_id=self.CLIENT_ID,
-                                 client_secret=self.CLIENT_SECRET,
-                                 redirect_uri=self.REDIRECT_URI,
-                                 cache_path=self.SESSION_FILE,
-                                 scope=self.AUTH_SCOPE,
-                                 open_browser=False)
+        self.auth = GuiSpotifyOAuth(client_id=self.CLIENT_ID,
+                                    client_secret=self.CLIENT_SECRET,
+                                    redirect_uri=self.REDIRECT_URI,
+                                    cache_path=self.SESSION_FILE,
+                                    scope=self.AUTH_SCOPE)
 
         self.sp = spotipy.Spotify(auth_manager=self.auth)
 
     @property
     def name(self):
-        return 'Spotify'
+        return self.APP_NAME
 
     @property
     def uid(self):
         return self.sp.me()['id']
+
+    @staticmethod
+    def get_search_url(query):
+        q = urllib.parse.quote(query)
+        url = f"https://open.spotify.com/search/{q}"
+        return url
 
     def search_artist(self, name):
         result = self.sp.search(name, limit=10, type='artist')

@@ -1,19 +1,88 @@
 #!/usr/bin/env python3
 
-import tidalapi
 from pathlib import Path
+import urllib.parse
+from typing import Callable
+import tidalapi
 
+from main_window import gMainWindow
 from item_types import Artist, Album, Track, Playlist
+from dialogs import MessageDialog, InputDialog
+
+################################################################################
+
+class GuiTidalSession(tidalapi.Session):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    def login_pkce(self, fn_print: Callable[[str], None] = print) -> None:
+        global gMainWindow
+        
+        # Get login url
+        url_login: str = self.pkce_login_url()
+
+        #fn_print("READ CAREFULLY!")
+        #fn_print("---------------")
+        #fn_print(
+        #    "You need to open this link and login with your username and password. "
+        #    "Afterwards you will be redirected to an 'Oops' page. "
+        #    "To complete the login you must copy the URL from this 'Oops' page and paste it to the input field."
+        #)
+        #fn_print(url_login)
+                            
+        # Get redirect URL from user input.
+        #url_redirect: str = input("Paste 'Ooops' page URL here and press <ENTER>:")
+        
+        url_login = 'https://example.com/test?param&param2'
+        dlg = InputDialog(gMainWindow, f"{TidalApp.APP_NAME} login", 
+            "You need to open this link and login with your username and password.<br/>"
+            "Afterwards you will be redirected to an 'Oops' page.<br/><br/>"
+            f'<a href="{url_login}">{url_login}</a><br/><br/>'
+            "To complete the login you must copy the URL from this 'Oops' page and paste it to the input field.<br/>",
+            hint="(Paste URL here)"
+        )
+
+        if dialog.exec():
+            url_redirect: str = dlg.textValue()
+        
+        # Query for auth tokens
+        json: dict[str, Union[str, int]] = self.pkce_get_auth_token(url_redirect)
+
+        # Parse and set tokens.
+        self.process_auth_token(json, is_pkce_token=True)
+
+        # Swap the client_id and secret
+        # self.client_enable_hires()
+        
+    def login_oauth_simple(self, fn_print: Callable[[str], None] = print) -> None:
+        global gMainWindow
+        
+        login, future = self.login_oauth()
+        #text = "Visit https://{0} to log in, the code will expire in {1} seconds."
+        #fn_print(text.format(login.verification_uri_complete, login.expires_in))
+
+        url_login, expires_in = login.verification_uri_complete, login.expires_in
+
+        dlg = MessageDialog(gMainWindow, f"{TidalApp.APP_NAME} login", 
+            f'Visit <a href="https://{url_login}">{url_login}</a> to log in.<br/>'
+            f"The code will expire in {expires_in} seconds.<br/>"
+        )
+        dlg.exec()
+        
+        future.result()
+      
 
 ################################################################################
 
 class TidalApp:
-
+    
+    APP_NAME = 'Tidal'
     SESSION_FILE = 'tidal-session-oauth.json'
 
     def __init__(self):
 
-        self.td = tidalapi.Session()
+        self.td = GuiTidalSession()
         self.td.login_session_file(Path(self.SESSION_FILE))
 
         self.user = self.td.user
@@ -21,11 +90,17 @@ class TidalApp:
 
     @property
     def name(self):
-        return 'Tidal'
+        return self.APP_NAME
 
     @property
     def uid(self):
         return self.user.id
+
+    @staticmethod
+    def get_search_url(query):
+        q = urllib.parse.quote(query)
+        url = f"https://tidal.com/search?q={q}"
+        return url
 
     def search_artist(self, name):
         result = self.td.search(name, limit=10, models=[tidalapi.Artist])
