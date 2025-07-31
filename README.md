@@ -10,6 +10,17 @@ Currently supported services:
 
 The application is written in Python and uses PyQt6 for its GUI.
 
+Simply open a terminal and run:
+```sh
+python app.py
+```
+The graphical interface allows you to transfer favorite artists, 
+albums and tracks, and any playlists created by you.
+(Shared playlists are not supported yet.)
+
+The first time you run the app, you will need to authenticate
+with your personal account at the streaming two services.
+
 ## Dependencies
 
 * attridict
