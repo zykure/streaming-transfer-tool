@@ -90,30 +90,45 @@ class MainWindow(QMainWindow):
         self.mappingTable = IdMappingTable(self)
         self.mappingTable.load()
 
+        # Overview page
+        self.wAppInfoLabelA = QLabel()
+        self.wAppInfoLabelA.setStyleSheet("QLabel {font-size: 16pt; }")
+        
+        self.wAppInfoLabelB = QLabel()
+        self.wAppInfoLabelB.setStyleSheet("QLabel {font-size: 16pt; }")
+        
+        self.wOverviewLayout = QGridLayout()
+        self.wOverviewLayout.addWidget(self.wAppInfoLabelA, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wOverviewLayout.addWidget(self.wAppInfoLabelB, 0, 2, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        
+        self.wOverviewWidget = QWidget(self)
+        self.wOverviewWidget.setLayout(self.wOverviewLayout)
+
         # Artists page
-        self.artistWidget = ArtistWidget(self)
+        self.wArtistWidget = ArtistWidget(self)
 
         # Albums page
-        self.albumWidget = AlbumWidget(self)
+        self.wAlbumWidget = AlbumWidget(self)
 
         # Tracks page
-        self.trackWidget = TrackWidget(self)
+        self.wTrackWidget = TrackWidget(self)
 
         # Playlists page
-        self.playlistWidget = PlaylistWidget(self)
+        self.wPlaylistWidget = PlaylistWidget(self)
 
-        self.statusBar = self.statusBar()
+        self.wStatusBar = self.statusBar()
 
         # Main window
-        self.tabWidget = QTabWidget()
-        self.tabWidget.addTab(self.artistWidget, 'Artists')
-        self.tabWidget.addTab(self.albumWidget, 'Albums')
-        self.tabWidget.addTab(self.trackWidget, 'Tracks')
-        self.tabWidget.addTab(self.playlistWidget, 'Playlists')
-        #self.tabWidget.setStyleSheet("QTabBar::tab {min-width: 100px; max-width: 400px;}");
+        self.wTabWidget = QTabWidget()
+        self.wTabWidget.addTab(self.wOverviewWidget, 'Overview')
+        self.wTabWidget.addTab(self.wArtistWidget, 'Artists')
+        self.wTabWidget.addTab(self.wAlbumWidget, 'Albums')
+        self.wTabWidget.addTab(self.wTrackWidget, 'Tracks')
+        self.wTabWidget.addTab(self.wPlaylistWidget, 'Playlists')
+        #self.wTabWidget.setStyleSheet("QTabBar::tab {min-width: 100px; max-width: 400px;}");
 
         self.setWindowTitle("Streaming Transfer Tool")
-        self.setCentralWidget(self.tabWidget)
+        self.setCentralWidget(self.wTabWidget)
         self.resize(1000, 600);
         self.showMaximized()
 
@@ -122,21 +137,33 @@ class MainWindow(QMainWindow):
 
     def showMessage(self, msg, timeout=4000):
         print(msg)
-        if self.statusBar:
-            self.statusBar.showMessage(msg, timeout)
+        if self.wStatusBar:
+            self.wStatusBar.showMessage(msg, timeout)
 
     def setAppA(self, app):
         self.appA = app
+        
+        self.wAppInfoLabelA.setText(
+            f"<b>Service: {self.appA.name}</b><br/><br/>"
+            f"User ID: {self.appA.uid}<br/>"
+            f"Display Name: {self.appA.display_name}<br/>"
+        )
 
-        self.artistWidget.reset()
-        self.albumWidget.reset()
-        self.trackWidget.reset()
-        self.playlistWidget.reset()
+        self.wArtistWidget.reset()
+        self.wAlbumWidget.reset()
+        self.wTrackWidget.reset()
+        self.wPlaylistWidget.reset()
 
     def setAppB(self, app):
         self.appB = app
 
-        self.artistWidget.reset()
-        self.albumWidget.reset()
-        self.trackWidget.reset()
-        self.playlistWidget.reset()
+        self.wAppInfoLabelB.setText(
+            f"<b>Service: {self.appB.name}</b><br/><br/>"
+            f"User ID: {self.appB.uid}<br/>"
+            f"Display Name: {self.appB.display_name}<br/>"
+        )
+
+        self.wArtistWidget.reset()
+        self.wAlbumWidget.reset()
+        self.wTrackWidget.reset()
+        self.wPlaylistWidget.reset()

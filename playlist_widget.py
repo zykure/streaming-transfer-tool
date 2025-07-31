@@ -28,12 +28,14 @@ class PlaylistWidget(_WidgetTemplate):
         self.wTableTracksViewA.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableTracksViewA.verticalHeader().hide()
         self.wTableTracksViewA.setModel(self.wTableTracksModelA)
+        self.wTableTracksViewA.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.wTableTracksModelB = TrackModel()
         self.wTableTracksViewB = QTableView()
         self.wTableTracksViewB.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableTracksViewB.verticalHeader().hide()
         self.wTableTracksViewB.setModel(self.wTableTracksModelB)
+        self.wTableTracksViewB.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.wTableTracksModelA.setSiblingModel(self.wTableTracksModelB)
         self.wTableTracksModelB.setSiblingModel(self.wTableTracksModelA)

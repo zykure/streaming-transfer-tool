@@ -12,21 +12,30 @@ class _WidgetTemplate(QWidget):
         self.parent = parent
 
         # middle buttons
-        self.wButtonLoadA = QPushButton('< Load')
-        self.wButtonLoadB = QPushButton('Load >')
-        self.wButtonTransfer = QPushButton('>> Transfer >>')
-        self.wButtonRevTransfer = QPushButton('<< Transfer <<')
-        self.wButtonSubmitA = QPushButton('< SUBMIT')
-        self.wButtonSubmitB = QPushButton('SUBMIT >')
+        self.wButtonLoadA = QPushButton('🡄 Load')
+        self.wButtonLoadB = QPushButton('Load 🡆')
+        self.wButtonTransfer = QPushButton('─ Transfer →')
+        self.wButtonRevTransfer = QPushButton('← Transfer ─')
+        self.wButtonSubmitA = QPushButton('🡄 SUBMIT')
+        self.wButtonSubmitB = QPushButton('SUBMIT 🡆')
+        
+        self.wButtonLoadA.setStyleSheet("QPushButton {width: 100px; height: 32px; }")
+        self.wButtonLoadB.setStyleSheet("QPushButton {width: 100px; height: 32px; }")
+        self.wButtonTransfer.setStyleSheet("QPushButton {width: 150px; height: 32px; }")
+        self.wButtonRevTransfer.setStyleSheet("QPushButton {width: 150px; height: 32px; }")
+        self.wButtonSubmitA.setStyleSheet("QPushButton {width: 100px; height: 32px; }")
+        self.wButtonSubmitB.setStyleSheet("QPushButton {width: 100px; height: 32px; }")
 
         self.wButtonLayout = QGridLayout()
         self.wButtonLayout.setContentsMargins(20, 100, 20, 100);
-        self.wButtonLayout.addWidget(self.wButtonLoadA, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
-        self.wButtonLayout.addWidget(self.wButtonLoadB, 3, 2, 1, 1, Qt.AlignmentFlag.AlignRight)
-        self.wButtonLayout.addWidget(self.wButtonTransfer, 5, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
-        self.wButtonLayout.addWidget(self.wButtonRevTransfer, 6, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
-        self.wButtonLayout.addWidget(self.wButtonSubmitA, 8, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
-        self.wButtonLayout.addWidget(self.wButtonSubmitB, 8, 2, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.setRowStretch(0, 1)
+        self.wButtonLayout.addWidget(self.wButtonLoadA, 1, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        self.wButtonLayout.addWidget(self.wButtonLoadB, 1, 2, 1, 1, Qt.AlignmentFlag.AlignRight)
+        self.wButtonLayout.addWidget(self.wButtonTransfer, 3, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.addWidget(self.wButtonRevTransfer, 4, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.addWidget(self.wButtonSubmitA, 5, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.addWidget(self.wButtonSubmitB, 5, 2, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wButtonLayout.setRowStretch(6, 1)
 
         # left table
         self.wButtonLoadA.clicked.connect(self.loadAData)
@@ -41,6 +50,7 @@ class _WidgetTemplate(QWidget):
         self.wTableViewA.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewA.verticalHeader().hide()
         self.wTableViewA.setModel(self.wTableModelA)
+        self.wTableViewA.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.wLabelA = QLabel()
         self.wLabelA.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -56,6 +66,7 @@ class _WidgetTemplate(QWidget):
         self.wTableViewB.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewB.verticalHeader().hide()
         self.wTableViewB.setModel(self.wTableModelB)
+        self.wTableViewB.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.wLabelB = QLabel()
         self.wLabelB.setAlignment(Qt.AlignmentFlag.AlignCenter)

@@ -77,6 +77,10 @@ class SpotifyApp:
     def uid(self):
         return self.sp.me()['id']
 
+    @property
+    def display_name(self):
+        return self.sp.me()['display_name']
+
     @staticmethod
     def get_search_url(query):
         q = urllib.parse.quote(query)

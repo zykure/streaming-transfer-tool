@@ -96,6 +96,10 @@ class TidalApp:
     def uid(self):
         return self.user.id
 
+    @property
+    def display_name(self):
+        return f"{self.user.first_name or ''} {self.user.last_name or ''}"
+
     @staticmethod
     def get_search_url(query):
         q = urllib.parse.quote(query)
