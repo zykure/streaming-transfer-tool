@@ -32,8 +32,10 @@ class AlbumWidget(_WidgetTemplate):
 
         model = view.model()
         model.clear()
-
+        
+        self.parent.busy()
         self.parent.showMessage(f"\nLoading {app.name} albums ...")
+        
         items = app.get_saved_albums()
         albums = sorted(items, key=lambda x: x.sortKey())
 
@@ -45,12 +47,19 @@ class AlbumWidget(_WidgetTemplate):
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
 
+        self.parent.showMessage(f"\nLoaded {len(model.items)} albums from {app.name} ...")
+        self.parent.done()
+
     def _transferData(self,
                       appA, viewA: QTableView,
                       appB, viewB: QTableView):
 
         modelA = viewA.model()
         modelB = viewB.model()
+        
+        self.parent.busy()
+
+        num_items = 0
 
         for a_album in modelA.items:
             a_name = a_album.simplifiedName()
@@ -71,6 +80,7 @@ class AlbumWidget(_WidgetTemplate):
                 self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_album.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_album)
+                num_items += 1
                 continue
 
             # Search by album name
@@ -91,6 +101,7 @@ class AlbumWidget(_WidgetTemplate):
                     self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_album.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_album)
+                    num_items += 1
                     self.parent.mappingTable.add('album', a_id, b_id)
 
                     match = True
@@ -119,6 +130,7 @@ class AlbumWidget(_WidgetTemplate):
                             self.parent.showMessage(f"Adding album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_album.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_album)
+                            num_items += 1
                             self.parent.mappingTable.add('album', a_id, b_id)
 
                 else:
@@ -126,6 +138,9 @@ class AlbumWidget(_WidgetTemplate):
 
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
+
+        self.parent.showMessage(f"\nTransferred {num_items} albums to {appB.name} ...")
+        self.parent.done()
 
     def _submitData(self, app, view: QTableView):
 
@@ -137,10 +152,12 @@ class AlbumWidget(_WidgetTemplate):
                 added_albums.append(item)
 
         if not added_albums:
+            self.parent.showMessage(f"\nThere are no albums to be sumitted to {app.name} ...")
             return
+        
+        self.parent.busy()
 
-        print(added_albums)
-
+        #print(added_albums)
         print(f"Adding {len(added_albums)} albums to {app.name} ...")
         app.add_saved_albums(added_albums)
         
@@ -149,3 +166,6 @@ class AlbumWidget(_WidgetTemplate):
         dlg.exec()
 
         self._loadData(app, view)
+        
+        self.parent.showMessage(f"\nSubmitted {len(added_albums)} albums to {app.name} ...")
+        self.parent.done()

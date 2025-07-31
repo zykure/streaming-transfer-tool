@@ -32,8 +32,10 @@ class TrackWidget(_WidgetTemplate):
 
         model = view.model()
         model.clear()
-
+        
+        self.parent.busy()
         self.parent.showMessage(f"\nLoading {app.name} tracks ...")
+        
         items = app.get_saved_tracks()
         tracks = sorted(items, key=lambda x: x.sortKey())
 
@@ -45,12 +47,19 @@ class TrackWidget(_WidgetTemplate):
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
 
+        self.parent.showMessage(f"\nLoaded {len(model.items)} tracks from {app.name} ...")
+        self.parent.done()
+
     def _transferData(self,
                       appA, viewA: QTableView,
                       appB, viewB: QTableView):
 
         modelA = viewA.model()
         modelB = viewB.model()
+        
+        self.parent.busy()
+
+        num_items = 0
 
         for a_track in modelA.items:
             a_name = a_track.simplifiedName()
@@ -63,8 +72,6 @@ class TrackWidget(_WidgetTemplate):
                 self.parent.mappingTable.add('track', a_id, b_id)
                 continue
 
-            print(a_name, modelB.names)
-
             # Re-use known mapping
             b_id = self.parent.mappingTable.find('track', a_id)
             if b_id:
@@ -74,6 +81,7 @@ class TrackWidget(_WidgetTemplate):
                 self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_track.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_track)
+                num_items += 1
                 continue
 
             # Search by track name
@@ -100,6 +108,7 @@ class TrackWidget(_WidgetTemplate):
                     self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_track.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_track)
+                    num_items += 1
                     self.parent.mappingTable.add('track', a_id, b_id)
 
                     match = True
@@ -128,6 +137,7 @@ class TrackWidget(_WidgetTemplate):
                             self.parent.showMessage(f"Adding track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_track.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_track)
+                            num_items += 1
                             self.parent.mappingTable.add('track', a_id, b_id)
 
                 else:
@@ -136,6 +146,9 @@ class TrackWidget(_WidgetTemplate):
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
 
+        self.parent.showMessage(f"\nTransferred {num_items} albums to {appB.name} ...")
+        self.parent.done()
+        
     def _submitData(self, app, view: QTableView):
 
         model = view.model()
@@ -146,10 +159,12 @@ class TrackWidget(_WidgetTemplate):
                 added_tracks.append(item)
 
         if not added_tracks:
+            self.parent.showMessage(f"\nThere are no tracks to be sumitted to {app.name} ...")
             return
+            
+        self.parent.busy()
 
-        print(added_tracks)
-
+        #print(added_tracks)
         print(f"Adding {len(added_tracks)} tracks to {app.name} ...")
         app.add_saved_tracks(added_tracks)
 
@@ -158,3 +173,7 @@ class TrackWidget(_WidgetTemplate):
         dlg.exec()
 
         self._loadData(app, view)
+
+        self.parent.showMessage(f"\nSubmtited {len(added_tracks)} tracks to {app.name} ...")
+        self.parent.done()
+        

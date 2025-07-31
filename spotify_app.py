@@ -54,7 +54,15 @@ class SpotifyApp:
     CLIENT_SECRET = '9f82028d9eeb463695674ba7ac8429ef'
 
     REDIRECT_URI  = 'https://example.com/callback/'
-    AUTH_SCOPE    = 'user-library-read,user-follow-read,user-follow-read'
+    AUTH_SCOPE    = ','.join([
+            'playlist-read-private',
+            'playlist-modify-private',
+            'playlist-modify-public',
+            'user-follow-read',
+            'user-follow-modify',
+            'user-library-read',
+            'user-library-modify',
+        ])
 
     APP_NAME = 'Spotify'
     SESSION_FILE  = 'spotify-session-oauth.json'
@@ -152,8 +160,6 @@ class SpotifyApp:
                 break
             offset += 50
 
-        print(items[0])
-
         return [ Track(id=tr.track.id, name=tr.track.name,
                        artist=tr.track.artists[0].name, album=tr.track.album.name)
                 for tr in items ]
@@ -192,15 +198,49 @@ class SpotifyApp:
                        artist=tr.track.artists[0].name, album=tr.track.album.name)
                 for tr in items ]
 
+    def add_saved_artists(self, artists: list[Artist]):
+        return self.sp.user_follow_artists([ ar.id for ar in artists ])
+
+    def add_saved_albums(self, albums: list[Album]):
+        return self.sp.current_user_saved_albums_add([ al.id for al in albums ])
+
+    def add_saved_tracks(self, tracks: list[Track]):
+        return self.sp.current_user_saved_tracks_add([ tr.id for tr in tracks ])
+        
+    def add_playlist(self, playlist: Playlist):
+        # first try to find existing playlist
+        pl_id = None
+
+        offset = 0
+        while pl_id is None:
+            result = self.sp.current_user_playlists(limit=50, offset=offset)
+            #print(result)
+            for item in result['items']:
+                if item['id'] == playlist.id:
+                    pl_id = item['id']
+                    break
+                if item['name'] == playlist.name:
+                    pl_id = item['id']
+                    break                
+            if result['next'] is None:
+                break
+            offset += 50            
+        
+        # otherwise create new
+        if not pl_id:
+            pl_id = self.sp.user_playlist_create(self.uid, playlist.name)
+        
+        self.sp.playlist_replace_items(pl_id, [ tr.id for tr in playlist.getTracks() ])
+        
+        self.sp.playlist_change_details(pl_id, 
+            public=playlist.public, description=playlist.description)
+            
+        return pl_id
+            
 
 if __name__ == "__main__":
     api = SpotifyApp()
 
-    print()
     print(api.get_saved_artists())
-
-    print()
     print(api.get_saved_albums())
-
-    print()
     print(api.get_saved_tracks())

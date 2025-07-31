@@ -1,3 +1,4 @@
+import time
 import json
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import *
@@ -83,7 +84,8 @@ class MainWindow(QMainWindow):
         gMainWindow = self
 
         super().__init__()
-
+        
+        self.is_busy = False
         self.appA = None
         self.appB = None
 
@@ -116,7 +118,11 @@ class MainWindow(QMainWindow):
         # Playlists page
         self.wPlaylistWidget = PlaylistWidget(self)
 
+        # Status bar
+        self.wBusyLabel = QLabel()
+
         self.wStatusBar = self.statusBar()
+        self.wStatusBar.addPermanentWidget(self.wBusyLabel)
 
         # Main window
         self.wTabWidget = QTabWidget()
@@ -135,10 +141,20 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.mappingTable.save()
 
-    def showMessage(self, msg, timeout=4000):
+    def showMessage(self, msg, timeout=0):
         print(msg)
         if self.wStatusBar:
             self.wStatusBar.showMessage(msg, timeout)
+
+    def busy(self):
+        self.is_busy = True
+        if self.wStatusBar:
+            self.wBusyLabel.setText('BUSY')
+
+    def done(self):
+        self.is_busy = False
+        if self.wStatusBar:
+            self.wBusyLabel.setText('DONE')
 
     def setAppA(self, app):
         self.appA = app

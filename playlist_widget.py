@@ -102,19 +102,26 @@ class PlaylistWidget(_WidgetTemplate):
         model = view.model()
         model.clear()
 
+        self.parent.busy()
         self.parent.showMessage(f"\nLoading {app.name} playlists ...")
+        
         items = app.get_playlists()
         playlists = sorted(items, key=lambda x: x.sortKey())
 
+        num_tracks = 0
         print(f"=> Playlist ({len(playlists)}):")
         for playlist in playlists:
             self.parent.showMessage(f"Loaded playlist: {playlist.name}")
             model.add(playlist)
+            num_tracks += playlist.numTracks()
 
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
         self.wTableTracksModelA.layoutChanged.emit()
         self.wTableTracksModelB.layoutChanged.emit()
+
+        self.parent.showMessage(f"\nLoaded {len(model.items)} playlists with {num_tracks} tracks from {app.name} ...")
+        self.parent.done()
 
     def _transferData(self,
                       appA, viewA: QTableView,
@@ -133,8 +140,13 @@ class PlaylistWidget(_WidgetTemplate):
 
         else:
             #input_playlists = modelA.items
-            self.parent.showMessage("Select a playlist entry first!", timeout=0)
+            self.parent.showMessage("Select a playlist entry first!")
             return
+            
+        self.parent.busy()
+
+        num_items = 0
+        num_tracks = 0
 
         for a_playlist in input_playlists:
             a_name = a_playlist.simplifiedName()
@@ -157,6 +169,7 @@ class PlaylistWidget(_WidgetTemplate):
 
             b_playlist.clearTracks()  # clear playlist to ensure correct track order when adding
             b_playlist.setDirty(True)  # mark as dirty to save later
+            num_items += 1
 
             # Process playlist's tracks
 
@@ -180,6 +193,7 @@ class PlaylistWidget(_WidgetTemplate):
 
                     self.parent.showMessage(f"Transfer track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_id}) [restored]")
                     b_playlist.addTrack(b_track)
+                    num_tracks += 1
                     continue
 
                 # Search by track name
@@ -205,6 +219,7 @@ class PlaylistWidget(_WidgetTemplate):
 
                         self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [matched]")
                         b_playlist.addTrack(b_track)
+                        num_tracks += 1
                         self.parent.mappingTable.add('track', a_track_id, b_track_id)
 
                         match = True
@@ -232,6 +247,7 @@ class PlaylistWidget(_WidgetTemplate):
                                 # Add saved track
                                 self.parent.showMessage(f"Adding track: {a_track_name} ({appA.name}:{a_id}) => {b_track_name} ({appB.name}:{b_id}) [manual]")
                                 b_playlist.addTrack(b_track)
+                                num_tracks += 1
                                 self.parent.mappingTable.add('track', a_track_id, b_track_id)
 
                     else:
@@ -246,6 +262,9 @@ class PlaylistWidget(_WidgetTemplate):
             if len(modelB.items) > 0:
                 viewB.selectRow(0)
 
+        self.parent.showMessage(f"\nTransferred {num_items} playlists with {num_tracks} tracks to {appB.name} ...")
+        self.parent.done()
+        
     def _submitData(self, app, view: QTableView):
 
         model = view.model()
@@ -258,10 +277,12 @@ class PlaylistWidget(_WidgetTemplate):
                 num_tracks += playlist.numTracks()
 
         if not added_playlists:
+            self.parent.showMessage(f"\nThere are no playlists to be sumitted to {app.name} ...")
             return
 
-        print(added_playlists)
+        self.parent.busy()
 
+        #print(added_playlists)
         print(f"Adding {len(added_playlists)} playlists to {app.name} ...")
         for playlist in added_playlists:
             app.add_playlist(playlist)
@@ -271,3 +292,7 @@ class PlaylistWidget(_WidgetTemplate):
         dlg.exec() 
         
         self._loadData(app, view)
+
+        self.parent.showMessage(f"\nSubmitted {len(added_playlists)} playlists with {num_tracks} tracks to {app.name} ...")
+        self.parent.done()
+        

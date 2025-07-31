@@ -185,8 +185,12 @@ class TidalApp:
     def add_playlist(self, playlist: Playlist):
         # first try to find existing playlist
         pl = None
-        for pl in self.user.playlists():
-            if pl.name == playlist.name:
+        for item in self.user.playlists():
+            if item.id == playlist.id:
+                pl = item
+                break
+            if item.name == playlist.name:
+                pl = item
                 break
 
         # otherwise create new
@@ -195,7 +199,7 @@ class TidalApp:
 
         # clear playlist and add tracks
         pl.clear()
-        pl.add([ tr.id for tr in playlist.getTracks() ], allow_duplicates=False)
+        pl.add([ tr.id for tr in playlist.getTracks() ], allow_duplicates=True)
 
         # update playlist details
         if playlist.public:
@@ -209,7 +213,6 @@ class TidalApp:
 if __name__ == "__main__":
     api = TidalApp()
 
-    #api.get_saved_artists()
-    #api.get_saved_albums()
-    #api.get_saved_tracks()
-    api.get_playlists()
+    print(api.get_saved_artists())
+    print(api.get_saved_albums())
+    print(api.get_saved_tracks())

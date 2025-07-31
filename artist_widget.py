@@ -19,7 +19,7 @@ class ArtistWidget(_WidgetTemplate):
 
         self.wTableModelA.setSiblingModel(self.wTableModelB)
         self.wTableModelB.setSiblingModel(self.wTableModelA)
-
+        
         # layout
         self.wLayout = QHBoxLayout()
         self.wLayout.addLayout(self.wLayoutA)
@@ -32,8 +32,10 @@ class ArtistWidget(_WidgetTemplate):
 
         model = view.model()
         model.clear()
-
-        self.parent.showMessage(f"\nLoading {app.name} artists ...")
+        
+        self.parent.busy()
+        self.parent.showMessage(f"\nLoading artists from {app.name} ...")
+        
         items = app.get_saved_artists()
         artists = sorted(items, key=lambda x: x.sortKey())
 
@@ -44,6 +46,9 @@ class ArtistWidget(_WidgetTemplate):
 
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
+        
+        self.parent.showMessage(f"\nLoaded {len(model.items)} artists from {app.name} ...")
+        self.parent.done()
 
     def _transferData(self,
                       appA, viewA: QTableView,
@@ -51,6 +56,10 @@ class ArtistWidget(_WidgetTemplate):
 
         modelA = viewA.model()
         modelB = viewB.model()
+                
+        self.parent.busy()
+
+        num_items = 0
 
         for a_artist in modelA.items:
             a_name = a_artist.simplifiedName()
@@ -71,6 +80,7 @@ class ArtistWidget(_WidgetTemplate):
                 self.parent.showMessage(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_artist.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_artist)
+                num_items += 1
                 continue
 
             # Search by artist name
@@ -90,6 +100,7 @@ class ArtistWidget(_WidgetTemplate):
                     self.parent.showMessage(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_artist.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_artist)
+                    num_items += 1
                     self.parent.mappingTable.add('artist', a_id, b_id)
 
                     match = True
@@ -118,6 +129,7 @@ class ArtistWidget(_WidgetTemplate):
                             self.parent.showMessage(f"Adding artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_artist.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_artist)
+                            num_items += 1
                             self.parent.mappingTable.add('artist', a_id, b_id)
 
                 else:
@@ -125,6 +137,9 @@ class ArtistWidget(_WidgetTemplate):
 
         self.wTableModelA.layoutChanged.emit()
         self.wTableModelB.layoutChanged.emit()
+
+        self.parent.showMessage(f"\nTransferred {num_items} artists to {appB.name} ...")
+        self.parent.done()
 
     def _submitData(self, app, view: QTableView):
 
@@ -136,10 +151,12 @@ class ArtistWidget(_WidgetTemplate):
                 added_artists.append(item)
 
         if not added_artists:
+            self.parent.showMessage(f"\nThere are no artists to be sumitted to {app.name} ...")
             return
+        
+        self.parent.busy()
 
-        print(added_artists)
-
+        #print(added_artists)
         print(f"Adding {len(added_artists)} artists to {app.name} ...")
         app.add_saved_artists(added_artists)
 
@@ -148,3 +165,6 @@ class ArtistWidget(_WidgetTemplate):
         dlg.exec()
         
         self._loadData(app, view)
+        
+        self.parent.showMessage(f"\nSubmitted {len(added_artists)} artists to {app.name} ...")
+        self.parent.done()

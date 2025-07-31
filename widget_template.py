@@ -1,3 +1,4 @@
+from threading import Thread
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import *
 
@@ -104,34 +105,52 @@ class _WidgetTemplate(QWidget):
     def loadAData(self):
         """Load A table."""
 
-        self._loadData(self.parent.appA, self.wTableViewA)
+        t = Thread(self._loadData(self.parent.appA, self.wTableViewA))
+        t.start()
 
     def loadBData(self):
         """Load B table."""
-
-        self._loadData(self.parent.appB, self.wTableViewB)
+        
+        t = Thread(self._loadData(self.parent.appB, self.wTableViewB))
+        t.start()
 
     def transferAToB(self):
         """Transfer items from A to B."""
 
-        self._transferData(self.parent.appA, self.wTableViewA,
-                           self.parent.appB, self.wTableViewB)
+        if self.parent.is_busy:
+            return
+
+        t = Thread(self._transferData(self.parent.appA, self.wTableViewA,
+                                      self.parent.appB, self.wTableViewB))
+        t.start()
 
     def transferBToA(self):
         """Transfer items from B to A."""
 
-        self._transferData(self.parent.appB, self.wTableViewB,
-                           self.parent.appA, self.wTableViewA)
+        if self.parent.is_busy:
+            return
+
+        t = Thread(self._transferData(self.parent.appB, self.wTableViewB,
+                                      self.parent.appA, self.wTableViewA))
+        t.start()
 
     def submitA(self) -> None:
         """Submit changed items in A."""
 
-        self._submitData(self.parent.appA, self.wTableViewA)
+        if self.parent.is_busy:
+            return
+
+        t = Thread(self._submitData(self.parent.appA, self.wTableViewA))
+        t.start()
 
     def submitB(self):
         """Submit changed items in B."""
 
-        self._submitData(self.parent.appB, self.wTableViewB)
+        if self.parent.is_busy:
+            return
+
+        t = Thread(self._submitData(self.parent.appB, self.wTableViewB))
+        t.start()
 
     def _scrollTable(self, viewA: QTableView, viewB: QTableView):
 
