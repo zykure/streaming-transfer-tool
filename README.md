@@ -13,6 +13,9 @@ After downloading the sources, simply open a terminal and run:
 python3 app.py
 ```
 
+To download the sources, use the `git` command if available, or download a ZIP file via this link:
+https://github.com/zykure/streaming-transfer-tool/archive/refs/heads/main.zip
+
 ## Basic usage
 
 The graphical interface allows you to transfer favorite artists, albums and tracks, and any playlists created by you.
