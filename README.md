@@ -57,6 +57,9 @@ Install command:
 python3 -m pip install attridict pyqt6 spotipy tidalapi
 ```
 
+> Note: The Spotify API requires you to enter a client id + secret (in addition to your normal user authentication.)
+> If you don't have one, you need to register your own app client at: https://developer.spotify.com/dashboard
+
 ## Development
 
 The project is hosted on GitHub:
