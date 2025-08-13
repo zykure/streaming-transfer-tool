@@ -81,7 +81,16 @@ class TidalApp:
     SESSION_FILE = 'tidal-session-oauth.json'
 
     def __init__(self):
+        
+        self.td = None
+        self.user = None
+        self.fav = None
 
+        self.client_id: str = ""
+        self.client_secret: str = ""
+        
+    def connect(self):
+        
         self.td = GuiTidalSession()
         self.td.login_session_file(Path(self.SESSION_FILE))
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import attridict
+import json
 import urllib.parse
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -39,7 +40,7 @@ class GuiSpotifyOAuth(SpotifyOAuth):
 
         if dlg.exec():
             response: str = dlg.textValue()
-            print(response)
+            #print(response)
             state, code = SpotifyOAuth.parse_auth_response_url(response)
             
             if self.state is not None and self.state != state:
@@ -49,9 +50,6 @@ class GuiSpotifyOAuth(SpotifyOAuth):
 ################################################################################
 
 class SpotifyApp:
-
-    CLIENT_ID     = '4ff21dcb012a417ab5c1cb0574eb8983'
-    CLIENT_SECRET = '9f82028d9eeb463695674ba7ac8429ef'
 
     REDIRECT_URI  = 'https://example.com/callback/'
     AUTH_SCOPE    = ','.join([
@@ -66,17 +64,69 @@ class SpotifyApp:
 
     APP_NAME = 'Spotify'
     SESSION_FILE  = 'spotify-session-oauth.json'
-
+    CLIENT_FILE = 'spotify-api-client.json'
+       
     def __init__(self):
+        
+        self.auth = None
+        self.sp = None
+        
+        self.client_id: str = ""
+        self.client_secret: str = ""
+        
+        self.restore_client()
 
-        self.auth = GuiSpotifyOAuth(client_id=self.CLIENT_ID,
-                                    client_secret=self.CLIENT_SECRET,
+    def connect(self):
+        global gMainWindow
+
+        # get client_id if not defined
+        if not self.client_id:
+            dlg = InputDialog(gMainWindow, f"{SpotifyApp.APP_NAME} API", 
+                "Please enter a valid <b>CLIENT ID</b> for the Spotify API:<br/>",
+                hint="(Paste ID here)"
+            )
+            
+            if dlg.exec():
+                self.client_id = dlg.textValue()
+
+        # get client_secret if not defined
+        if not self.client_secret:
+            dlg = InputDialog(gMainWindow, f"{SpotifyApp.APP_NAME} API", 
+                "Please enter a valid <b>CLIENT SECRET</b> for the Spotify API:<br/>",
+                hint="(Paste SECRET here)"
+            )
+  
+            if dlg.exec():
+                self.client_secret = dlg.textValue()
+           
+        self.auth = GuiSpotifyOAuth(client_id=self.client_id,
+                                    client_secret=self.client_secret,
                                     redirect_uri=self.REDIRECT_URI,
                                     cache_path=self.SESSION_FILE,
                                     scope=self.AUTH_SCOPE)
 
         self.sp = spotipy.Spotify(auth_manager=self.auth)
+                
+        self.store_client()
 
+    def restore_client(self):
+        
+        try:
+            with open(self.CLIENT_FILE, 'r') as f:
+                data = json.load(f)
+                self.client_id = data.get('client_id', "")
+                self.client_secret = data.get('client_secret', "")
+        except FileNotFoundError as e:
+            return
+           
+    def store_client(self):
+
+        with open(self.CLIENT_FILE, 'w') as f:
+            json.dump({
+                'client_id': self.client_id,
+                'client_secret': self.client_secret,
+            }, f)
+         
     @property
     def name(self):
         return self.APP_NAME

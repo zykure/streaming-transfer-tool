@@ -3,6 +3,7 @@ import json
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import *
 
+from app_info_widget import AppInfoWidget
 from artist_widget import ArtistWidget
 from album_widget import AlbumWidget
 from track_widget import TrackWidget
@@ -75,11 +76,11 @@ class IdMappingTable():
         except json.decoder.JSONDecodeError:
             return
 
-
 #############################################################################
 
 class MainWindow(QMainWindow):
     def __init__(self):
+        
         global gMainWindow
         gMainWindow = self
 
@@ -93,15 +94,12 @@ class MainWindow(QMainWindow):
         self.mappingTable.load()
 
         # Overview page
-        self.wAppInfoLabelA = QLabel()
-        self.wAppInfoLabelA.setStyleSheet("QLabel {font-size: 16pt; }")
-        
-        self.wAppInfoLabelB = QLabel()
-        self.wAppInfoLabelB.setStyleSheet("QLabel {font-size: 16pt; }")
+        self.wAppInfoWidgetA = AppInfoWidget('A')
+        self.wAppInfoWidgetB = AppInfoWidget('B')
         
         self.wOverviewLayout = QGridLayout()
-        self.wOverviewLayout.addWidget(self.wAppInfoLabelA, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
-        self.wOverviewLayout.addWidget(self.wAppInfoLabelB, 0, 2, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wOverviewLayout.addWidget(self.wAppInfoWidgetA, 0, 0, 1, 1, Qt.AlignmentFlag.AlignCenter)
+        self.wOverviewLayout.addWidget(self.wAppInfoWidgetB, 0, 2, 1, 1, Qt.AlignmentFlag.AlignCenter)
         
         self.wOverviewWidget = QWidget(self)
         self.wOverviewWidget.setLayout(self.wOverviewLayout)
@@ -158,13 +156,10 @@ class MainWindow(QMainWindow):
 
     def setAppA(self, app):
         self.appA = app
+        self.appA.connect()
         
-        self.wAppInfoLabelA.setText(
-            f"<b>Service: {self.appA.name}</b><br/><br/>"
-            f"User ID: {self.appA.uid}<br/>"
-            f"Display Name: {self.appA.display_name}<br/>"
-        )
-
+        self.wAppInfoWidgetA.setApp(self.appA)
+        
         self.wArtistWidget.reset()
         self.wAlbumWidget.reset()
         self.wTrackWidget.reset()
@@ -172,12 +167,9 @@ class MainWindow(QMainWindow):
 
     def setAppB(self, app):
         self.appB = app
+        self.appB.connect()
 
-        self.wAppInfoLabelB.setText(
-            f"<b>Service: {self.appB.name}</b><br/><br/>"
-            f"User ID: {self.appB.uid}<br/>"
-            f"Display Name: {self.appB.display_name}<br/>"
-        )
+        self.wAppInfoWidgetB.setApp(self.appB)
 
         self.wArtistWidget.reset()
         self.wAlbumWidget.reset()
