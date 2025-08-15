@@ -92,6 +92,8 @@ class MainWindow(QMainWindow):
 
         self.mappingTable = IdMappingTable(self)
         self.mappingTable.load()
+        
+        print("Initializing main window ...")
 
         # Overview page
         self.wAppInfoWidgetA = AppInfoWidget('A')

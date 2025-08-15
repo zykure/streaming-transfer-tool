@@ -46,12 +46,14 @@ class _WidgetTemplate(QWidget):
         self.wButtonSubmitA.clicked.connect(self.submitA)
         self.wButtonSubmitB.clicked.connect(self.submitB)
 
-        self.wTableModelA = _ModelTemplate()
         self.wTableViewA = QTableView()
         self.wTableViewA.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewA.verticalHeader().hide()
-        self.wTableViewA.setModel(self.wTableModelA)
         self.wTableViewA.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.wTableViewA.setSortingEnabled(True)
+        
+        self.wTableModelA = _ModelTemplate()   
+        self.wTableViewA.setModel(self.wTableModelA)
 
         self.wLabelA = QLabel()
         self.wLabelA.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -62,12 +64,14 @@ class _WidgetTemplate(QWidget):
         self.wLayoutA.addWidget(self.wTableViewA)
 
         # right table
-        self.wTableModelB = _ModelTemplate()
         self.wTableViewB = QTableView()
         self.wTableViewB.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.wTableViewB.verticalHeader().hide()
-        self.wTableViewB.setModel(self.wTableModelB)
         self.wTableViewB.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.wTableViewB.setSortingEnabled(True)
+        
+        self.wTableModelB = _ModelTemplate()  
+        self.wTableViewB.setModel( self.wTableModelB)
 
         self.wLabelB = QLabel()
         self.wLabelB.setAlignment(Qt.AlignmentFlag.AlignCenter)

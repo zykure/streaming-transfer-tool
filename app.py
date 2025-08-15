@@ -17,4 +17,5 @@ window.setAppA(SpotifyApp())
 window.setAppB(TidalApp())
 
 # Start the event loop.
+print("App ready.")
 app.exec()
