@@ -2,7 +2,7 @@
 #############################################################################
 
 def simplifiedName(text: str):
-    for c in "()[]{}":
+    for c in "()[]{}-:;.,":
         text = text.replace(c, '')
     return text.strip()
 
@@ -82,10 +82,11 @@ class Track(_TypeTemplate):
 #############################################################################
 
 class Playlist(_TypeTemplate):
-    def __init__(self, id: str, name: str, descr: str, tracks: list, public: bool = False):
+    def __init__(self, id: str, name: str, descr: str, tracks: list, public: bool = False, image_url: str = ""):
         super().__init__(id, name)
         self.description = descr.strip()
         self.public = public
+        self.image_url = image_url
         self._tracks = tracks
 
     def __repr__(self):

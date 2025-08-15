@@ -230,7 +230,7 @@ class PlaylistWidget(_WidgetTemplate):
                     search_url = appB.get_search_url(query)
                     dlg = InputDialog(self, f"Track not found on {appB.name}",
                         "Track NOT FOUND!<br/>"
-                        f'<a href="{search_url}">{a_name}</a><br/><br/>'
+                        f'<a href="{search_url}">{a_track_name}</a><br/><br/>'
                         "Please provide id manually (leave empty to skip):<br/>",
                         hint="(Paste Track id here)"
                     )
@@ -245,7 +245,7 @@ class PlaylistWidget(_WidgetTemplate):
                                 b_track_name = b_track.simplifiedName()
 
                                 # Add saved track
-                                self.parent.showMessage(f"Adding track: {a_track_name} ({appA.name}:{a_id}) => {b_track_name} ({appB.name}:{b_id}) [manual]")
+                                self.parent.showMessage(f"Adding track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [manual]")
                                 b_playlist.addTrack(b_track)
                                 num_tracks += 1
                                 self.parent.mappingTable.add('track', a_track_id, b_track_id)

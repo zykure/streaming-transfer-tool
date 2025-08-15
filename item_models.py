@@ -145,7 +145,7 @@ class TrackModel(_ModelTemplate):
 
 class PlaylistModel(_ModelTemplate):
 
-    COLUMNS = ['id', 'name', 'description', 'num_tracks']
+    COLUMNS = ['id', 'name', 'description', 'public', 'num_tracks']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,6 +159,8 @@ class PlaylistModel(_ModelTemplate):
             elif index.column() == 2:
                 return self.items[index.row()].description
             elif index.column() == 3:
+                return 'yes' if self.items[index.row()].public else 'no'
+            elif index.column() == 4:
                 return self.items[index.row()].numTracks()
 
         elif role == Qt.ItemDataRole.BackgroundRole:

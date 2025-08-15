@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import attridict
+import html
 import json
 import urllib.parse
 import spotipy
@@ -228,8 +229,13 @@ class SpotifyApp:
         filled_items = []
         for pl in items:
             tracks = self.get_playlist_items(pl.id)
-            filled_items.append(Playlist(id=pl.id, name=pl.name, descr=pl.description,
-                                         tracks=tracks, public=pl.public))
+
+            filled_items.append(Playlist(id=pl.id, 
+                                         name=pl.name, 
+                                         descr=html.unescape(pl.description),
+                                         tracks=tracks, 
+                                         public=pl.public, 
+                                         image_url=pl.images[0]['url'] if pl.images else ""))
 
         return filled_items
 
@@ -283,7 +289,7 @@ class SpotifyApp:
         self.sp.playlist_replace_items(pl_id, [ tr.id for tr in playlist.getTracks() ])
         
         self.sp.playlist_change_details(pl_id, 
-            public=playlist.public, description=playlist.description)
+            public=playlist.public, description=html.escape(playlist.description))
             
         return pl_id
             

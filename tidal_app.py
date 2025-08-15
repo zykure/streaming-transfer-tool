@@ -175,11 +175,14 @@ class TidalApp:
     def get_playlists(self):
         result = self.user.playlists()
         #print(result)
-        return [ Playlist(id=pl.id, name=pl.name, descr=pl.description,
+        return [ Playlist(id=pl.id, 
+                          name=pl.name, 
+                          descr=pl.description,
                           tracks=[ Track(id=tr.id, name=tr.name,
                                          artist=tr.artists[0].name, album=tr.album.name)
                                   for tr in pl.tracks() ],
-                          public=pl.public)
+                          public=pl.public, 
+                          image_url=pl.picture)
                  for pl in result ]
 
     def add_saved_artists(self, artists: list[Artist]):
