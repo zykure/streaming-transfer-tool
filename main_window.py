@@ -54,11 +54,11 @@ class IdMappingTable():
         if app_key not in self.data[type]:
             return None
 
-        if idA not in self.data[type]:
+        if idA not in self.data[type][app_key]:
             return None
 
         # return mapping
-        idB = self.data[type][idA]
+        idB = self.data[type][app_key][idA]
         return idB
 
     def save(self):
