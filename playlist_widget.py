@@ -103,7 +103,7 @@ class PlaylistWidget(_WidgetTemplate):
         model.clear()
 
         self.parent.busy()
-        self.parent.showMessage(f"\nLoading {app.name} playlists ...")
+        print(f"\nLoading {app.name} playlists ...")
         
         items = app.get_playlists()
         playlists = sorted(items, key=lambda x: x.sortKey())
@@ -111,7 +111,7 @@ class PlaylistWidget(_WidgetTemplate):
         num_tracks = 0
         print(f"=> Playlist ({len(playlists)}):")
         for playlist in playlists:
-            self.parent.showMessage(f"Loaded playlist: {playlist.name}")
+            print(f"Loaded playlist: {playlist.name}")
             model.add(playlist)
             num_tracks += playlist.numTracks()
 
@@ -159,7 +159,7 @@ class PlaylistWidget(_WidgetTemplate):
             #     self.parent.mappingTable.add('playlist', a_id, b_id)
             #     continue
 
-            # self.parent.showMessage(f"Transfer playlist: {a_name} ({appA.name}:{a_id})")
+            # print(f"Transfer playlist: {a_name} ({appA.name}:{a_id})")
 
             b_playlist = modelB.find(a_name)
             if not b_playlist:
@@ -191,7 +191,7 @@ class PlaylistWidget(_WidgetTemplate):
                     b_track = appB.get_track(b_track_id)
                     b_track_name = b_track.simplifiedName()
 
-                    self.parent.showMessage(f"Transfer track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_id}) [restored]")
+                    print(f"Transfer track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [restored]")
                     b_playlist.addTrack(b_track)
                     num_tracks += 1
                     continue
@@ -217,7 +217,7 @@ class PlaylistWidget(_WidgetTemplate):
                             and b_track.album.lower() == a_track.album.lower():
                         b_track_id = str(b_track.id)
 
-                        self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [matched]")
+                        print(f"Transfer track: {a_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [matched]")
                         b_playlist.addTrack(b_track)
                         num_tracks += 1
                         self.parent.mappingTable.add('track', a_track_id, b_track_id)
@@ -245,7 +245,7 @@ class PlaylistWidget(_WidgetTemplate):
                                 b_track_name = b_track.simplifiedName()
 
                                 # Add saved track
-                                self.parent.showMessage(f"Adding track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [manual]")
+                                print(f"Adding track: {a_track_name} ({appA.name}:{a_track_id}) => {b_track_name} ({appB.name}:{b_track_id}) [manual]")
                                 b_playlist.addTrack(b_track)
                                 num_tracks += 1
                                 self.parent.mappingTable.add('track', a_track_id, b_track_id)

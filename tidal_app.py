@@ -211,7 +211,8 @@ class TidalApp:
 
         # clear playlist and add tracks
         pl.clear()
-        pl.add([ tr.id for tr in playlist.getTracks() ], allow_duplicates=True)
+        for tracks in playlist.getTracks(chunk_size=50):
+            pl.add([ tr.id for tr in tracks ], allow_duplicates=True)
 
         # update playlist details
         if playlist.public:
@@ -220,7 +221,6 @@ class TidalApp:
             pl.set_playlist_private()
 
         return self.fav.add_playlist(pl.id)
-
 
 if __name__ == "__main__":
     api = TidalApp()

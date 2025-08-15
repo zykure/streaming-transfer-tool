@@ -286,13 +286,13 @@ class SpotifyApp:
         if not pl_id:
             pl_id = self.sp.user_playlist_create(self.uid, playlist.name)
         
-        self.sp.playlist_replace_items(pl_id, [ tr.id for tr in playlist.getTracks() ])
+        for tracks in playlist.getTracks(chunk_size=50):
+            self.sp.playlist_replace_items(pl_id, [ tr.id for tr in tracks ])
         
         self.sp.playlist_change_details(pl_id, 
             public=playlist.public, description=html.escape(playlist.description))
             
         return pl_id
-            
 
 if __name__ == "__main__":
     api = SpotifyApp()

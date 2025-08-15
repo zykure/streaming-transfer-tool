@@ -98,7 +98,9 @@ class Playlist(_TypeTemplate):
     def clearTracks(self):
         self._tracks = []
 
-    def getTracks(self):
+    def getTracks(self, chunk_size=0):
+        if chunk_size > 0:
+            return self.__chunks(self._tracks, chunk_size)
         return self._tracks
 
     def addTrack(self, track: Track):
@@ -106,3 +108,9 @@ class Playlist(_TypeTemplate):
 
     def numTracks(self):
         return len(self._tracks)
+
+    @staticmethod
+    def __chunks(lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]

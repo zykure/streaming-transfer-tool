@@ -34,14 +34,14 @@ class TrackWidget(_WidgetTemplate):
         model.clear()
         
         self.parent.busy()
-        self.parent.showMessage(f"\nLoading {app.name} tracks ...")
+        print(f"\nLoading {app.name} tracks ...")
         
         items = app.get_saved_tracks()
         tracks = sorted(items, key=lambda x: x.sortKey())
 
         print(f"=> Tracks ({len(tracks)}):")
         for track in tracks:
-            self.parent.showMessage(f"Loaded track: {track.name}")
+            print(f"Loaded track: {track.name}")
             model.add(track)
 
         self.wTableModelA.layoutChanged.emit()
@@ -78,7 +78,7 @@ class TrackWidget(_WidgetTemplate):
                 b_track = appB.get_track(b_id)
                 b_name = b_track.simplifiedName()
 
-                self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
+                print(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_track.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_track)
                 num_items += 1
@@ -105,7 +105,7 @@ class TrackWidget(_WidgetTemplate):
                         and b_track.album.lower() == a_track.album.lower():
                     b_id = str(b_track.id)
 
-                    self.parent.showMessage(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
+                    print(f"Transfer track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_track.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_track)
                     num_items += 1
@@ -134,7 +134,7 @@ class TrackWidget(_WidgetTemplate):
                             b_name = b_track.simplifiedName()
 
                             # Add saved track
-                            self.parent.showMessage(f"Adding track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
+                            print(f"Adding track: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_track.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_track)
                             num_items += 1

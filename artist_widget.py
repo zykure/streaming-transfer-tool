@@ -34,14 +34,14 @@ class ArtistWidget(_WidgetTemplate):
         model.clear()
         
         self.parent.busy()
-        self.parent.showMessage(f"\nLoading artists from {app.name} ...")
+        print(f"\nLoading artists from {app.name} ...")
         
         items = app.get_saved_artists()
         artists = sorted(items, key=lambda x: x.sortKey())
 
         print(f"=> Artists ({len(artists)}):")
         for artist in artists:
-            self.parent.showMessage(f"Loaded artist: {artist.name}")
+            print(f"Loaded artist: {artist.name}")
             model.add(artist)
 
         self.wTableModelA.layoutChanged.emit()
@@ -77,7 +77,7 @@ class ArtistWidget(_WidgetTemplate):
             if b_id:
                 b_artist = appB.get_artist(b_id)
 
-                self.parent.showMessage(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
+                print(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_artist.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_artist)
                 num_items += 1
@@ -97,7 +97,7 @@ class ArtistWidget(_WidgetTemplate):
                 if b_artist.name.lower() == a_artist.name.lower():
                     b_id = str(b_artist.id)
 
-                    self.parent.showMessage(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
+                    print(f"Transfer artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_artist.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_artist)
                     num_items += 1
@@ -126,7 +126,7 @@ class ArtistWidget(_WidgetTemplate):
                             b_name = b_artist.simplifiedName()
 
                             # Add saved artist
-                            self.parent.showMessage(f"Adding artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
+                            print(f"Adding artist: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_artist.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_artist)
                             num_items += 1

@@ -34,14 +34,14 @@ class AlbumWidget(_WidgetTemplate):
         model.clear()
         
         self.parent.busy()
-        self.parent.showMessage(f"\nLoading {app.name} albums ...")
+        print(f"\nLoading {app.name} albums ...")
         
         items = app.get_saved_albums()
         albums = sorted(items, key=lambda x: x.sortKey())
 
         print(f"=> Albums ({len(albums)}):")
         for album in albums:
-            self.parent.showMessage(f"Loaded album: {album.name}")
+            print(f"Loaded album: {album.name}")
             model.add(album)
 
         self.wTableModelA.layoutChanged.emit()
@@ -77,7 +77,7 @@ class AlbumWidget(_WidgetTemplate):
             if b_id:
                 b_album = appB.get_album(b_id)
 
-                self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
+                print(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [restored]")
                 b_album.setDirty(True)  # mark as dirty to save later
                 modelB.insert(b_album)
                 num_items += 1
@@ -98,7 +98,7 @@ class AlbumWidget(_WidgetTemplate):
                         and b_album.artist.lower() == a_album.artist.lower():
                     b_id = str(b_album.id)
 
-                    self.parent.showMessage(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
+                    print(f"Transfer album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [matched]")
                     b_album.setDirty(True)  # mark as dirty to save later
                     modelB.insert(b_album)
                     num_items += 1
@@ -127,7 +127,7 @@ class AlbumWidget(_WidgetTemplate):
                             b_name = b_album.simplifiedName()
 
                             # Add saved album
-                            self.parent.showMessage(f"Adding album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
+                            print(f"Adding album: {a_name} ({appA.name}:{a_id}) => {b_name} ({appB.name}:{b_id}) [manual]")
                             b_album.setDirty(True)  # mark as dirty to save later
                             modelB.insert(b_album)
                             num_items += 1
